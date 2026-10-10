@@ -4,9 +4,6 @@ import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from '
 import { ArrowRight, ChevronDown, Focus, Layers3, List, Map, MoreHorizontal, RotateCcw, Sparkles, Star, Timer, Waypoints } from 'lucide-react'
 
 type QuestionRole = 'central' | 'satellite'
-type Question = { id: number; text: string; color: string; role: QuestionRole; isPrioritised: boolean }
-
-type LaidOut = Question & { x: number; y: number; radius: number; orbit: number; delay: string }
 
 const palette = ['#55baff', '#a969f4', '#71e7bf', '#ef8bc2', '#ffb84d'] as const
 
@@ -34,6 +31,8 @@ const perspectives = [
 ] as const
 
 type PerspectiveId = typeof perspectives[number]['id']
+type Question = { id: number; text: string; color: string; role: QuestionRole; isPrioritised: boolean; perspectiveOrigin?: PerspectiveId }
+type LaidOut = Question & { x: number; y: number; radius: number; orbit: number; delay: string }
 
 const starterQuestions: Question[] = [
   { id: 1, text: 'Why do we dream?', color: '#ffb84d', role: 'central', isPrioritised: false },
@@ -169,6 +168,7 @@ export default function Page() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const activePerspective = perspectives.find(item => item.id === perspective)
   const addingRef = useRef(false)
+  const pendingOriginRef = useRef<PerspectiveId | null>(null)
   const centralQuestionId = questions.find(question => question.role === 'central')?.id ?? null
   const nodes = useMemo(() => layoutNodes(questions, centralQuestionId), [questions, centralQuestionId])
   const orbitCount = new Set(nodes.map(node => node.orbit)).size
@@ -177,6 +177,7 @@ export default function Page() {
 
   useEffect(() => {
     if (!input) addingRef.current = false
+    if (!input.trim()) pendingOriginRef.current = null
   }, [input])
 
   function addQuestion(event?: FormEvent) {
@@ -186,9 +187,11 @@ export default function Page() {
     if (!text) return
     addingRef.current = true
     const nextId = Date.now()
+    const perspectiveOrigin = mode === 'Focus' ? pendingOriginRef.current ?? undefined : undefined
+    pendingOriginRef.current = null
     setQuestions(prev => {
       const role: QuestionRole = mode === 'Focus' && !prev.some(question => question.role === 'central') ? 'central' : 'satellite'
-      return [...prev, { id: nextId, text, color: palette[prev.length % palette.length], role, isPrioritised: false }]
+      return [...prev, { id: nextId, text, color: palette[prev.length % palette.length], role, isPrioritised: false, ...(perspectiveOrigin ? { perspectiveOrigin } : {}) }]
     })
     setSelected(nextId)
     setInput('')
@@ -210,15 +213,18 @@ export default function Page() {
       setInput('')
       setView('map')
       setPerspective(null)
+      pendingOriginRef.current = null
       requestAnimationFrame(() => inputRef.current?.focus())
       return
     }
     setEnded(true)
     setPerspective(null)
+    pendingOriginRef.current = null
   }
 
-  function applyStarter(text: string) {
+  function applyStarter(text: string, origin: PerspectiveId) {
     if (ended || mode !== 'Focus') return
+    pendingOriginRef.current = origin
     setInput(text)
     requestAnimationFrame(() => inputRef.current?.focus())
   }
@@ -231,9 +237,9 @@ export default function Page() {
   return <main className="app-shell">
     <aside className="sidebar">
       <header className="brand"><div className="brand-mark"><span>c</span><span>q</span></div><div><div className="brand-name">curitopia</div><div className="tagline">Keep asking. Go further.</div></div></header>
-      <section className="mode-switch" aria-label="Choose exploration mode"><button className={mode === 'Focus' ? 'active' : ''} onClick={() => setMode('Focus')}><Focus size={15}/> Focus</button><button className={mode === 'Quickfire' ? 'active' : ''} onClick={() => setMode('Quickfire')}><Timer size={15}/> Quickfire</button></section>
+      <section className="mode-switch" aria-label="Choose exploration mode"><button className={mode === 'Focus' ? 'active' : ''} onClick={() => setMode('Focus')}><Focus size={15}/> Focus</button><button className={mode === 'Quickfire' ? 'active' : ''} onClick={() => { pendingOriginRef.current = null; setMode('Quickfire') }}><Timer size={15}/> Quickfire</button></section>
       <section className="panel prompt-panel"><div className="panel-label">{ended ? 'Session complete' : mode === 'Focus' ? 'Explore your question' : 'Keep the questions coming'}</div><form onSubmit={addQuestion}><textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={onComposerKeyDown} placeholder={ended ? 'Start a new exploration to add questions' : 'Type your next question...'} aria-label="Next question" disabled={ended} /><button className="add-button" type="submit" disabled={ended}>Add Question <ArrowRight size={17}/></button></form></section>
-      {mode === 'Focus' && !ended ? <section className="panel angle-panel"><div className="panel-label">Explore from another angle</div><div className="angle-grid" role="group" aria-label="Question perspectives">{perspectives.map(item => <button type="button" key={item.id} className={perspective === item.id ? 'active' : ''} aria-pressed={perspective === item.id} onClick={() => setPerspective(item.id)}>{item.label}</button>)}</div>{activePerspective ? <ul className="starter-list">{activePerspective.starters.map(starter => <li key={starter}><button type="button" onClick={() => applyStarter(starter)}>{starter}</button></li>)}</ul> : <p className="angle-hint">Choose a perspective for optional question starters.</p>}</section> : null}
+      {mode === 'Focus' && !ended ? <section className="panel angle-panel"><div className="panel-label">Explore from another angle</div><div className="angle-grid" role="group" aria-label="Question perspectives">{perspectives.map(item => <button type="button" key={item.id} className={perspective === item.id ? 'active' : ''} aria-pressed={perspective === item.id} onClick={() => { setPerspective(item.id); if (pendingOriginRef.current) pendingOriginRef.current = item.id }}>{item.label}</button>)}</div>{activePerspective ? <ul className="starter-list">{activePerspective.starters.map(starter => <li key={starter}><button type="button" onClick={() => applyStarter(starter, activePerspective.id)}>{starter}</button></li>)}</ul> : <p className="angle-hint">Choose a perspective for optional question starters.</p>}</section> : null}
       <section className="panel stats-panel"><div className="panel-heading"><span>Today&apos;s exploration</span><ChevronDown size={17}/></div><div className="stats"><div><strong>{questions.length}</strong><span>questions</span></div><div><strong>{orbitCount}</strong><span>orbits</span></div></div></section>
       <section className="panel selected-detail" aria-live="polite">
         <div className="panel-heading"><span>Selected question</span></div>
