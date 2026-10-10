@@ -13,6 +13,7 @@ export interface Question {
   text: string;
   createdAt: number;
   role: "central" | "satellite";
+  isPrioritised: boolean;
 }
 
 export interface ExplorationSession {
@@ -32,6 +33,7 @@ Treat this as a suggested contract, not a mandate to replace an existing compati
 - Store the full question text.
 - IDs must be stable and unique.
 - Counts are derived from `questions.length`.
+- `isPrioritised` is stored on each question and defaults to `false`. The prioritised count is derived from the question list. Priority is set only after a session ends and does not change text, order or `role`.
 - In Quickfire, questions may have no semantic relationship to one another.
 - In Focus, the central question is explicitly identified; do not pretend all satellites have meaningful parent links unless the user has created those links.
 - Completion is a session state, not deletion.

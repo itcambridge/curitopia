@@ -1,28 +1,28 @@
 'use client'
 
 import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowRight, ChevronDown, Focus, Layers3, List, Map, MoreHorizontal, RotateCcw, Sparkles, Timer, Waypoints } from 'lucide-react'
+import { ArrowRight, ChevronDown, Focus, Layers3, List, Map, MoreHorizontal, RotateCcw, Sparkles, Star, Timer, Waypoints } from 'lucide-react'
 
 type QuestionRole = 'central' | 'satellite'
-type Question = { id: number; text: string; color: string; role: QuestionRole }
+type Question = { id: number; text: string; color: string; role: QuestionRole; isPrioritised: boolean }
 
 type LaidOut = Question & { x: number; y: number; radius: number; orbit: number; delay: string }
 
 const palette = ['#55baff', '#a969f4', '#71e7bf', '#ef8bc2', '#ffb84d'] as const
 
 const starterQuestions: Question[] = [
-  { id: 1, text: 'Why do we dream?', color: '#ffb84d', role: 'central' },
-  { id: 2, text: 'What happens in the brain when we dream?', color: '#53baff', role: 'satellite' },
-  { id: 3, text: 'Could dreams help us solve problems?', color: '#ed8dc1', role: 'satellite' },
-  { id: 4, text: 'Are dreams a way of processing emotions?', color: '#f5a653', role: 'satellite' },
-  { id: 5, text: 'Why do some dreams feel meaningful?', color: '#ef8bc2', role: 'satellite' },
-  { id: 6, text: 'What is the purpose of REM sleep?', color: '#7ee4be', role: 'satellite' },
-  { id: 7, text: 'Could dreams show us possible futures?', color: '#559aff', role: 'satellite' },
-  { id: 8, text: 'Do we all dream in the same way?', color: '#71e8c0', role: 'satellite' },
-  { id: 9, text: 'Can dreams influence our decisions?', color: '#a866f5', role: 'satellite' },
-  { id: 10, text: 'Do other animals dream?', color: '#a36cff', role: 'satellite' },
-  { id: 11, text: 'Can AI dream?', color: '#a55af1', role: 'satellite' },
-  { id: 12, text: 'What if dreams are a form of time travel?', color: '#70e4b9', role: 'satellite' },
+  { id: 1, text: 'Why do we dream?', color: '#ffb84d', role: 'central', isPrioritised: false },
+  { id: 2, text: 'What happens in the brain when we dream?', color: '#53baff', role: 'satellite', isPrioritised: false },
+  { id: 3, text: 'Could dreams help us solve problems?', color: '#ed8dc1', role: 'satellite', isPrioritised: false },
+  { id: 4, text: 'Are dreams a way of processing emotions?', color: '#f5a653', role: 'satellite', isPrioritised: false },
+  { id: 5, text: 'Why do some dreams feel meaningful?', color: '#ef8bc2', role: 'satellite', isPrioritised: false },
+  { id: 6, text: 'What is the purpose of REM sleep?', color: '#7ee4be', role: 'satellite', isPrioritised: false },
+  { id: 7, text: 'Could dreams show us possible futures?', color: '#559aff', role: 'satellite', isPrioritised: false },
+  { id: 8, text: 'Do we all dream in the same way?', color: '#71e8c0', role: 'satellite', isPrioritised: false },
+  { id: 9, text: 'Can dreams influence our decisions?', color: '#a866f5', role: 'satellite', isPrioritised: false },
+  { id: 10, text: 'Do other animals dream?', color: '#a36cff', role: 'satellite', isPrioritised: false },
+  { id: 11, text: 'Can AI dream?', color: '#a55af1', role: 'satellite', isPrioritised: false },
+  { id: 12, text: 'What if dreams are a form of time travel?', color: '#70e4b9', role: 'satellite', isPrioritised: false },
 ]
 
 function wrapLabel(text: string, maxChars: number, maxLines: number) {
@@ -99,7 +99,7 @@ function layoutNodes(questions: Question[], centralQuestionId: number | null): L
   })
 }
 
-function QuestionMap({ questions, selected, onSelect, centralQuestionId }: { questions: Question[]; selected: number; onSelect: (id: number) => void; centralQuestionId: number | null }) {
+function QuestionMap({ questions, selected, onSelect, centralQuestionId, showPriority }: { questions: Question[]; selected: number; onSelect: (id: number) => void; centralQuestionId: number | null; showPriority: boolean }) {
   const nodes = useMemo(() => layoutNodes(questions, centralQuestionId), [questions, centralQuestionId])
   const rings = useMemo(() => [...new Set(nodes.filter(node => node.orbit > 0).map(node => {
     const dx = node.x - 50
@@ -124,8 +124,9 @@ function QuestionMap({ questions, selected, onSelect, centralQuestionId }: { que
     {nodes.map(n => {
       const lines = n.orbit === 0 ? centralLines : wrapLabel(n.text, n.radius > 5.5 ? 11 : 8, 3)
       const startY = n.y - ((lines.length - 1) * 1.7) / 2
-      return <g key={n.id} className={`map-node ${n.id === selected ? 'selected' : ''}`} style={{ animationDelay: n.delay }} onClick={() => onSelect(n.id)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(n.id) } }} tabIndex={0} role="button" aria-label={n.text}>
-        <circle cx={n.x} cy={n.y} r={n.radius} fill={n.color} fillOpacity={n.orbit === 0 ? .18 : .14} stroke={n.color} strokeWidth={n.id === selected ? .45 : .25} filter="url(#glow)" />
+      const prioritised = showPriority && n.isPrioritised
+      return <g key={n.id} className={`map-node ${n.id === selected ? 'selected' : ''} ${prioritised ? 'prioritised' : ''}`} style={{ animationDelay: n.delay }} onClick={() => onSelect(n.id)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(n.id) } }} tabIndex={0} role="button" aria-label={prioritised ? `${n.text} (prioritised)` : n.text}>
+        <circle cx={n.x} cy={n.y} r={n.radius} fill={n.color} fillOpacity={n.orbit === 0 ? .18 : .14} stroke={prioritised ? '#e8c36a' : n.color} strokeWidth={prioritised ? .5 : n.id === selected ? .45 : .25} filter="url(#glow)" />
         {lines.map((line, lineIndex) => <text key={lineIndex} x={n.x} y={startY + lineIndex * 1.8} textAnchor="middle" className={n.orbit === 0 ? 'central-text' : 'satellite-text'}>{line}</text>)}
       </g>
     })}
@@ -144,6 +145,7 @@ export default function Page() {
   const centralQuestionId = questions.find(question => question.role === 'central')?.id ?? null
   const nodes = useMemo(() => layoutNodes(questions, centralQuestionId), [questions, centralQuestionId])
   const orbitCount = new Set(nodes.map(node => node.orbit)).size
+  const prioritisedCount = questions.filter(question => question.isPrioritised).length
   const selectedQuestion = questions.find(question => question.id === selected) ?? questions[0]
 
   useEffect(() => {
@@ -159,7 +161,7 @@ export default function Page() {
     const nextId = Date.now()
     setQuestions(prev => {
       const role: QuestionRole = mode === 'Focus' && !prev.some(question => question.role === 'central') ? 'central' : 'satellite'
-      return [...prev, { id: nextId, text, color: palette[prev.length % palette.length], role }]
+      return [...prev, { id: nextId, text, color: palette[prev.length % palette.length], role, isPrioritised: false }]
     })
     setSelected(nextId)
     setInput('')
@@ -186,6 +188,11 @@ export default function Page() {
     setEnded(true)
   }
 
+  function togglePriority(id: number) {
+    if (!ended) return
+    setQuestions(prev => prev.map(question => question.id === id ? { ...question, isPrioritised: !question.isPrioritised } : question))
+  }
+
   return <main className="app-shell">
     <aside className="sidebar">
       <header className="brand"><div className="brand-mark"><span>c</span><span>q</span></div><div><div className="brand-name">curitopia</div><div className="tagline">Keep asking. Go further.</div></div></header>
@@ -196,12 +203,12 @@ export default function Page() {
         <div className="panel-heading"><span>Selected question</span></div>
         <p>{selectedQuestion ? selectedQuestion.text : 'Add a question to see it here in full.'}</p>
       </section>
-      {ended ? <section className="panel review-panel" aria-label="Session review"><div className="panel-heading"><span>Session review</span></div><p className="review-count">{questions.length} question{questions.length === 1 ? '' : 's'} collected</p>{questions.length === 0 ? <p>No questions were collected in this session.</p> : <ol className="review-list">{questions.map(question => <li key={question.id}>{question.text}</li>)}</ol>}</section> : null}
+      {ended ? <section className="panel review-panel" aria-label="Session review"><div className="panel-heading"><span>Session review</span></div><p className="review-count">{questions.length} question{questions.length === 1 ? '' : 's'} collected</p><p className="review-count">{prioritisedCount} prioritised</p>{questions.length === 0 ? <p>No questions were collected in this session.</p> : <ol className="review-list">{questions.map(question => <li key={question.id}><button type="button" className="priority-toggle" aria-pressed={question.isPrioritised} aria-label={question.isPrioritised ? `Remove priority from: ${question.text}` : `Mark as important: ${question.text}`} onClick={() => togglePriority(question.id)}><Star size={16} fill={question.isPrioritised ? 'currentColor' : 'none'} /></button><span>{question.text}</span></li>)}</ol>}</section> : null}
       <div className="connections"><Sparkles size={29}/><div><strong>You&apos;re making<br/>connections.</strong><p>Your thinking is expanding<br/>in new directions.</p></div></div>
       <button className="end-button" onClick={handleSessionButton}>{ended ? <RotateCcw size={17}/> : <Layers3 size={17}/>} {ended ? 'Start new exploration' : 'End session & explore'}</button>
     </aside>
     <section className="map-area"><div className="star-field"/><div className="topbar"><div className="map-tabs" role="tablist" aria-label="Question views"><button type="button" role="tab" aria-selected={view === 'map'} className={view === 'map' ? 'selected' : ''} onClick={() => setView('map')}><Map size={17}/> Map</button><button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'selected' : ''} onClick={() => setView('list')}><List size={17}/> List</button><button type="button" disabled aria-disabled="true" title="Timeline is not available in this prototype"><Waypoints size={17}/> Timeline</button></div><button className="more" aria-label="More options"><MoreHorizontal size={20}/></button></div><div className="map-heading"><p>{ended ? 'Your collected questions' : 'A universe of curiosity'}</p><h1>{questions.length === 0 ? 'No questions yet' : `${questions.length} questions orbiting one idea`}</h1></div>
-      {view === 'list' ? <ul className="question-list">{questions.length === 0 ? <li className="empty-list">No questions yet. Add one to start exploring.</li> : questions.map(question => <li key={question.id}><button type="button" className={question.id === selectedQuestion?.id ? 'selected' : ''} onClick={() => setSelected(question.id)}>{question.text}</button></li>)}</ul> : <QuestionMap questions={questions} selected={selectedQuestion?.id ?? 0} onSelect={setSelected} centralQuestionId={centralQuestionId}/>}
+      {view === 'list' ? <ul className="question-list">{questions.length === 0 ? <li className="empty-list">No questions yet. Add one to start exploring.</li> : questions.map(question => <li key={question.id}><button type="button" className={`${question.id === selectedQuestion?.id ? 'selected' : ''} ${ended && question.isPrioritised ? 'prioritised' : ''}`} onClick={() => setSelected(question.id)}>{question.text}</button></li>)}</ul> : <QuestionMap questions={questions} selected={selectedQuestion?.id ?? 0} onSelect={setSelected} centralQuestionId={centralQuestionId} showPriority={ended}/>}
       <div className="map-footer"><span><span className="status-dot"/> {ended ? 'Session paused' : 'Live exploration'}</span><span>Select any question to read it in full</span></div></section>
   </main>
 }
