@@ -10,6 +10,31 @@ type LaidOut = Question & { x: number; y: number; radius: number; orbit: number;
 
 const palette = ['#55baff', '#a969f4', '#71e7bf', '#ef8bc2', '#ffb84d'] as const
 
+const perspectives = [
+  {
+    id: 'investigate',
+    label: 'Investigate',
+    starters: ['What might explain this?', 'How does this actually work?', 'What evidence would help me understand this?'],
+  },
+  {
+    id: 'reframe',
+    label: 'Reframe',
+    starters: ['What if the opposite were true?', 'How might someone with a different viewpoint see this?', 'What am I taking for granted?'],
+  },
+  {
+    id: 'connect',
+    label: 'Connect',
+    starters: ['Where else does this pattern appear?', 'What does this remind me of?', 'How might this connect to something seemingly unrelated?'],
+  },
+  {
+    id: 'challenge',
+    label: 'Challenge',
+    starters: ['What assumption am I making?', 'What would change my mind?', 'What is the strongest counterargument?'],
+  },
+] as const
+
+type PerspectiveId = typeof perspectives[number]['id']
+
 const starterQuestions: Question[] = [
   { id: 1, text: 'Why do we dream?', color: '#ffb84d', role: 'central', isPrioritised: false },
   { id: 2, text: 'What happens in the brain when we dream?', color: '#53baff', role: 'satellite', isPrioritised: false },
@@ -140,7 +165,9 @@ export default function Page() {
   const [selected, setSelected] = useState(1)
   const [ended, setEnded] = useState(false)
   const [view, setView] = useState<'map' | 'list'>('map')
+  const [perspective, setPerspective] = useState<PerspectiveId | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const activePerspective = perspectives.find(item => item.id === perspective)
   const addingRef = useRef(false)
   const centralQuestionId = questions.find(question => question.role === 'central')?.id ?? null
   const nodes = useMemo(() => layoutNodes(questions, centralQuestionId), [questions, centralQuestionId])
@@ -182,10 +209,18 @@ export default function Page() {
       setEnded(false)
       setInput('')
       setView('map')
+      setPerspective(null)
       requestAnimationFrame(() => inputRef.current?.focus())
       return
     }
     setEnded(true)
+    setPerspective(null)
+  }
+
+  function applyStarter(text: string) {
+    if (ended || mode !== 'Focus') return
+    setInput(text)
+    requestAnimationFrame(() => inputRef.current?.focus())
   }
 
   function togglePriority(id: number) {
@@ -198,6 +233,7 @@ export default function Page() {
       <header className="brand"><div className="brand-mark"><span>c</span><span>q</span></div><div><div className="brand-name">curitopia</div><div className="tagline">Keep asking. Go further.</div></div></header>
       <section className="mode-switch" aria-label="Choose exploration mode"><button className={mode === 'Focus' ? 'active' : ''} onClick={() => setMode('Focus')}><Focus size={15}/> Focus</button><button className={mode === 'Quickfire' ? 'active' : ''} onClick={() => setMode('Quickfire')}><Timer size={15}/> Quickfire</button></section>
       <section className="panel prompt-panel"><div className="panel-label">{ended ? 'Session complete' : mode === 'Focus' ? 'Explore your question' : 'Keep the questions coming'}</div><form onSubmit={addQuestion}><textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={onComposerKeyDown} placeholder={ended ? 'Start a new exploration to add questions' : 'Type your next question...'} aria-label="Next question" disabled={ended} /><button className="add-button" type="submit" disabled={ended}>Add Question <ArrowRight size={17}/></button></form></section>
+      {mode === 'Focus' && !ended ? <section className="panel angle-panel"><div className="panel-label">Explore from another angle</div><div className="angle-grid" role="group" aria-label="Question perspectives">{perspectives.map(item => <button type="button" key={item.id} className={perspective === item.id ? 'active' : ''} aria-pressed={perspective === item.id} onClick={() => setPerspective(item.id)}>{item.label}</button>)}</div>{activePerspective ? <ul className="starter-list">{activePerspective.starters.map(starter => <li key={starter}><button type="button" onClick={() => applyStarter(starter)}>{starter}</button></li>)}</ul> : <p className="angle-hint">Choose a perspective for optional question starters.</p>}</section> : null}
       <section className="panel stats-panel"><div className="panel-heading"><span>Today&apos;s exploration</span><ChevronDown size={17}/></div><div className="stats"><div><strong>{questions.length}</strong><span>questions</span></div><div><strong>{orbitCount}</strong><span>orbits</span></div></div></section>
       <section className="panel selected-detail" aria-live="polite">
         <div className="panel-heading"><span>Selected question</span></div>
