@@ -26,3 +26,24 @@ button { cursor:pointer; }
 .question-list { position:absolute; inset:96px 38px 64px; overflow:auto; margin:0; padding:0; list-style:none; z-index:2; display:flex; flex-direction:column; gap:8px; } .question-list button { width:100%; text-align:left; color:#e8effb; padding:12px 14px; border:1px solid rgba(104,161,228,.28); border-radius:12px; background:rgba(4,19,40,.7); } .question-list button.selected { box-shadow:inset 0 0 0 1px rgba(100,192,255,.35); background:linear-gradient(120deg,rgba(54,132,205,.55),rgba(40,67,111,.6)); } .question-list button.prioritised { border-color:rgba(232,195,106,.55); } .empty-list { color:#9ab1d6; padding:12px 4px; }
 @media (max-width:900px) { .app-shell { display:block; overflow:auto; } .sidebar { width:100%; padding:14px; } .connections { margin-top:0; } .map-area { min-height:640px; height:calc(100vh - 510px); min-height:580px; } .map-heading { left:20px; top:18px; } .topbar { top:14px; right:14px; } .map-tabs button { padding:9px 10px; } .map-tabs button:nth-child(3) { display:none; } .question-map { width:120vw; height:120vw; top:55%; left:50%; } .map-footer { left:20px; right:20px; bottom:14px; } .question-list { inset:80px 20px 54px; } }
 @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; } }
+
+.session-note { margin:-6px 4px 0; color:#8da7cf; font-size:12px; line-height:1.4; }
+.sign-out, .sign-out-error { border:1px solid rgba(104,161,228,.3); color:#e8effb; background:rgba(4,19,40,.7); border-radius:10px; }
+.sign-out { padding:11px 13px; }
+.sign-out:focus-visible, .auth-card a:focus-visible, .auth-form input:focus-visible { outline:2px solid rgba(112,192,255,.55); outline-offset:2px; }
+.sign-out-error { position:absolute; left:38px; right:32px; bottom:52px; z-index:3; margin:0; padding:10px 12px; color:#ffb4c8; }
+.auth-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:#020b1d; }
+.auth-card { width:min(100%,440px); padding:22px 22px 18px; }
+.auth-card .brand { height:auto; padding:0 0 8px; border:0; }
+.auth-card h1 { margin:8px 0 16px; font-size:22px; font-weight:600; letter-spacing:-.4px; }
+.auth-form { display:flex; flex-direction:column; }
+.auth-form label { color:#9ab1d6; font-size:14px; margin:0 0 6px; }
+.auth-form input { width:100%; color:white; margin:0 0 14px; padding:13px 14px; border:1px solid rgba(102,158,222,.4); border-radius:13px; outline:none; background:rgba(20,47,80,.67); }
+.auth-form input:focus { border-color:#58b8ff; box-shadow:0 0 0 3px rgba(75,170,255,.12); }
+.auth-form .add-button { margin-top:4px; }
+.auth-message { margin:0 0 12px; font-size:14px; line-height:1.45; }
+.auth-message.error { color:#ffb4c8; }
+.auth-message.success { color:#76dfb5; }
+.auth-footer { display:flex; justify-content:space-between; gap:12px; margin-top:16px; font-size:14px; }
+.auth-footer a { color:#8fd0ff; }
+@media (max-width:900px) { .sign-out-error { left:20px; right:20px; bottom:46px; } .auth-footer { flex-direction:column; } }

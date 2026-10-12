@@ -1,38 +1,132 @@
 # Architecture Notes
 
-## Important
-This is an initial direction, not permission to replace the current implementation. First inspect the existing source, package manifest and dependencies. Document what is already present, then keep the simplest architecture that meets the MVP requirements.
+## Status
+The persistence architecture below is the approved design (D-007 through D-014 in `docs/DECISIONS.md`). Email and password authentication is implemented. Explorations and questions are still stored in memory.
 
-## Intended prototype architecture
-- Next.js App Router if that is what the current repository uses.
-- React and TypeScript for UI and state.
-- Existing styling approach (likely Tailwind CSS; verify before assuming).
-- SVG for the orbital question map.
-- Local component state for session questions.
-- No backend or external AI dependency in the MVP.
+Inspect the repository before implementation. Keep the current Next.js, React, TypeScript, Tailwind, and pnpm setup.
 
-## Suggested component boundaries
-Adapt names to the current codebase; do not duplicate existing components.
-- `ModeSelector`: Quickfire / Focus selection.
-- `QuestionComposer`: input and Add Question behaviour.
-- `SessionStats`: calculated count(s).
-- `QuestionUniverse` or equivalent: SVG map and node rendering.
-- `QuestionNode`: one question circle and its label.
-- `QuickfireReview`: end-of-session review.
-- `AppShell` / sidebar: use the existing shell if present.
+## Confirmed prototype
+Verified from the repository on 2026-10-11. This is still the running application:
 
-## State and data flow
-The question list is the source of truth. Statistics and the map are derived from it. Do not maintain independent counters that can drift out of sync.
+- Package manager: pnpm 12.3.4, with `pnpm-lock.yaml`.
+- Next.js 16.4.0 App Router. The live page is `app/page.tsx`. The root layout is `app/layout.tsx`.
+- React 19 and TypeScript 5.7.
+- Tailwind CSS 4, with the existing global styles.
+- The orbital map is SVG rendered from the question array inside `app/page.tsx`.
+- Exploration state is React state in that page: questions, mode, ended flag, selected question, and view. There is no exploration record and no `localStorage`. The Supabase client is used for authentication only.
+- `components/curitopia-app.tsx` is an earlier shell. Nothing imports it. It still contains fixed journey figures. Do not persist those figures or revive that shell as the data source.
+- `@vercel/analytics` is a dependency. `app/layout.tsx` renders it when `NODE_ENV` is `production`. That page-view component stays. Do not send question text, titles, emails, or other exploration content to analytics.
+- `typescript.ignoreBuildErrors` has been removed. `pnpm build` and `pnpm typecheck` both enforce types.
+- `.gitignore` ignores `.env`, `.env.*` except `.env.example`, and `.vercel/`. `.env.example` lists placeholder names only.
+- Scripts in `package.json`: `dev`, `build`, `start`, `typecheck`. There is no lint script and no frontend test script.
+- `.cursor/rules/curitopia.mdc` is the always-applied project rule.
 
-A question should have a stable ID, full text, creation order/timestamp if useful, and an explicit role as central question or satellite. Do not infer semantic parent-child relationships in the MVP unless the UI actually records them.
+Question identity in the prototype is a number, often `Date.now()`, plus a decorative colour stored at insert time. The approved persistent contract uses a UUID and derives colour from that id. See `docs/DATA_MODEL.md`.
 
-## Rendering and performance
-- Keep layout calculation separate from rendering where practical.
-- Use stable IDs and stable layout coordinates.
-- Do not call random number generation on every React render.
-- Avoid adding a physics engine unless the existing implementation clearly requires one.
-- 100 nodes should remain usable. Prefer a predictable layout and responsive scaling over elaborate simulation.
-- Do not introduce libraries without explaining why they are necessary.
+## Prototype boundaries
+Adapt names to the current page. Do not duplicate the live UI.
 
-## Later, not now
-Possible later additions include persistence, account support, semantic clustering and AI-generated summaries. These require separate product and architecture decisions and are excluded from the current MVP.
+- Mode selector: Quickfire and Focus.
+- Question composer: input and Add Question.
+- Focus perspective panel: optional Investigate, Reframe, Connect, and Challenge starters.
+- Session statistics: counts derived from the question list and the layout.
+- Question map: SVG layout and node rendering.
+- Review: end-of-session list and priority toggles.
+- Shell: the existing sidebar and map area.
+
+The question list is the source of truth for the prototype. Statistics and the map are derived from it. Layout calculation stays separate from rendering. Layout for an unchanged list stays deterministic. Do not call random number generation on every React render. Do not add a physics engine. One hundred nodes should remain usable.
+
+## Approved persistence architecture
+Approved default:
+
+- Keep this Next.js, React, and TypeScript application.
+- Serve it from Linode at `https://curitopia.com`. DNS for that domain points at Linode, and browsers reach it over HTTPS. See D-015.
+- Add Supabase Auth for registration, email confirmation, sign-in, password reset, and sign-out. No social login. Auth is the managed Supabase project that already exists.
+- Store explorations and questions in that project's managed PostgreSQL. The schema and row-level security in `supabase/migrations/20261011162400_create_explorations.sql` stay the contract.
+- Require a signed-in confirmed user before any persistent exploration is written or read.
+- Enforce ownership with row-level security. Exercise those policies with pgTAP (`supabase test db`) on the local Supabase stack before they are applied to the hosted project.
+- Keep source in GitHub. The current origin is `https://github.com/itcambridge/curitopia.git`.
+- Keep AI out of this phase. Stored questions may later be read by an approved analysis phase. This phase does not add a model SDK, an analysis table, or an AI route.
+
+## Production and local databases
+Production data lives only in the hosted Supabase project. The local Supabase CLI stack, including Docker Postgres on port 54322, is a place to rehearse migrations and run `supabase test db`. It is not a second production database and it does not receive real accounts.
+
+Do not apply the exploration migration to the hosted project, change DNS, or change the Linode server until that work is requested. The open deployment choices are listed under D-015. They include the Linode process supervisor, the HTTPS certificate, DNS record shape, the GitHub release path, Auth redirect URLs, confirmation email transport, and whether Vercel Analytics stays after the host change.
+
+D-005 is the historical prototype decision. D-007 replaces it as the product direction. The code still follows D-005 until implementation starts.
+
+### Application shape
+- Server-rendered account checks using a cookie-backed Supabase session.
+- The browser uses the publishable Supabase key. Queries run as the signed-in user so row-level security applies.
+- The service-role key bypasses row-level security. This phase does not need it in the application. Do not expose it to the browser, commit it, or use it to read user explorations from UI code.
+- Session refresh uses the Next.js 16 root `proxy.ts` and `supabase.auth.getClaims()`. Protected pages use the same verified claims. `getSession()` is not used to decide access.
+- Routes in place: `/login`, `/signup`, `/forgot-password`, `/reset-password`, and `/auth/confirm`. A signed-in person lands on `/`, which is still the in-memory workspace. `/explorations` and `/explorations/[id]` wait for the library task.
+- Dependencies to add when implementation starts: `@supabase/supabase-js` and `@supabase/ssr`. Database tests use the Supabase CLI and pgTAP. No other persistence library, and no general-purpose frontend test framework.
+
+### Modules to add when implementation starts
+Keep these small. Leave map layout in its current form.
+
+- Account screens for registration, confirmation, sign-in, password reset, and sign-out.
+- Exploration library, listing only explorations that have at least one question.
+- A save-status indicator on the workspace.
+- A delete confirmation that states the delete is permanent.
+- A typed data-access boundary that maps database rows to the UI question model and derives colour from the question id.
+
+The page may keep a local copy of the open exploration while a request is in flight. After a successful response, the server row is the source of truth. A failed request leaves the local change in place and surfaces the error described in `docs/UX_SPEC.md`.
+
+The first accepted question calls `public.create_exploration_with_first_question`, which inserts the exploration and that question in one statement. The owner is `auth.uid()`. Until that statement commits, there is no library row. Later writes are per change: insert one question, update mode or completion, update one priority flag, rename, or delete the exploration. Sending the entire question list on every keystroke is not the write model. See `docs/DATA_MODEL.md`.
+
+Question ids are created in the client before the insert so a retry of the same question does not create a second row. Positions are allocated with the insert so two overlapping adds cannot claim the same order. Colour uses the id, not the position. See `docs/DATA_MODEL.md`.
+
+### Environment variables
+Names the application reads:
+
+- `NEXT_PUBLIC_SUPABASE_URL` — project URL, available in the browser.
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — publishable key from the Supabase Connect dialog, available in the browser. It is safe to expose only because row-level security rejects unowned rows.
+- `SUPABASE_SERVICE_ROLE_KEY` — server-only, not required for this phase, never prefixed with `NEXT_PUBLIC`.
+
+Store real values in the local environment used for migration tests and, when deployment is requested, on the Linode host. `.gitignore` already ignores `.env` files and allows a value-free `.env.example`. Do not commit filled env files, keys, or user data. An example file, if added during implementation, lists names only. Do not put the hosted database password or a Supabase access token in the repository.
+
+### Migrations and security
+- Keep SQL migrations in `supabase/migrations`. The exploration schema is `20261011162400_create_explorations.sql`. Do not apply it to a remote project until that is requested.
+- Enable row-level security on application tables before any user data is written. The migration does this.
+- Policies restrict rows to `auth.uid()`.
+- The anonymous role has no policies on exploration or question tables.
+- Application code and policies both treat ownership as the signed-in user. Policies remain the enforcement that still holds if a client is bypassed.
+- Do not log question text, passwords, or tokens.
+- Do not add analytics events that include question text or session content. The prototype still mounts Vercel Analytics. Keeping that component on Linode is open under D-013 and D-015.
+
+### Rendering, colour, and performance
+- Keep layout calculation deterministic from the saved question order.
+- Do not store map coordinates or node colour. Colour is a pure function of the question UUID and the fixed palette in `docs/DATA_MODEL.md`.
+- One hundred saved questions should remain usable with the current scale-to-fit layout.
+- Do not introduce a realtime subscription in this phase. Reload and explicit refetch cover open, continue, and retry.
+
+### Supabase Auth URL configuration
+Set these in the hosted project under Authentication → URL Configuration. The application does not change that dashboard.
+
+- Site URL: `https://curitopia.com`
+- Redirect URLs: `https://curitopia.com/auth/confirm` and `http://localhost:3000/auth/confirm`
+
+Also allow the same paths on any other local port you use. Do not add a wildcard that covers other domains. Under Authentication → Sign In / Providers → Email, turn on Confirm email. The default Supabase mailer is rate-limited. Production confirmation and password-reset messages need a custom SMTP provider under Authentication → Emails → SMTP.
+
+The app sends confirmation and recovery links to `/auth/confirm`. That route accepts a PKCE `code` and a `token_hash` with `type`. For a link that must work in a browser other than the one that requested it, set the Confirm signup and Reset password email templates to:
+
+`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/`
+
+`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password`
+
+`next` is accepted only for `/` and `/reset-password`.
+
+### Typecheck
+`typescript.ignoreBuildErrors` is removed. Keep `"typecheck": "tsc --noEmit"`. A production build fails on type errors.
+
+## Code that still differs from the approved design
+These are implementation gaps, not open design choices:
+
+1. **Storage.** The page still keeps one exploration in React state, including stored colours and numeric ids. Authentication does not write those questions.
+2. **Accounts.** Sign-in, registration, confirmation, password reset, and sign-out are implemented. The library and database-backed workspace are not.
+3. **Analytics.** The page-view component is already present. It must not receive exploration content. Whether it remains on Linode is undecided.
+
+## Later, not this phase
+AI summaries, semantic clustering, sharing, collaboration, and realtime presence are outside this phase. Social login and guest persistence are excluded by D-010. Persistence should leave question text, order, role, priority, and perspective origin intact so a later analysis phase can read them without inventing a second store.

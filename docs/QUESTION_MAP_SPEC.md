@@ -7,7 +7,7 @@ The question map makes the quantity and spread of questions visible. It is an in
 - Central question: largest, most visually prominent node.
 - Satellite questions: placed on one or more orbital rings around the centre.
 - Thin orbit lines provide structure; optional connectors may link the central question to satellites.
-- Colour variation is decorative and must not imply unsupported semantic categories.
+- Colour variation is decorative, derived from the stable question id, and must not imply unsupported semantic categories. Do not store colour.
 
 ## Placement
 - Calculate node positions from the question count, node sizes and available viewport.
