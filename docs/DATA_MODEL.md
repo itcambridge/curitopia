@@ -1,9 +1,9 @@
 # Data Model
 
 ## Status
-The relational schema below is the approved persistent contract (D-007, D-011, and D-012). It is implemented in `supabase/migrations/20261011162400_create_explorations.sql`. That migration has not been applied to a remote database, and the application still uses the in-memory prototype.
+The relational schema below is the approved persistent contract (D-007, D-011, and D-012). It is implemented in `supabase/migrations/20261011162400_create_explorations.sql` and has been applied to the hosted project. The signed-in home lists saved explorations, most recently updated first, and opens the one the user selects. Rename and delete are not built. pgTAP has not been run, so the policy tests are not evidence of runtime isolation.
 
-Two stores are described on purpose. The prototype store matches the running page. The migration is the persistent contract.
+Two stores are described on purpose. The prototype store records the earlier in-memory page. The migration is the persistent contract the workspace now uses.
 
 ## Prototype store
 `app/page.tsx` keeps one exploration in React state. There is no session record.
@@ -155,7 +155,7 @@ Questions, for the `authenticated` role:
 The same not-found behaviour should be used for a missing id and for another user's id, so a guess does not reveal that an exploration exists.
 
 ### Table sketch
-This sketch matches the migration. It is documentation, not the file that runs. The migration has not been applied to a remote database.
+This sketch matches the migration. It is documentation, not the file that runs. The same statements have been applied to the hosted project.
 
 ```sql
 create table public.explorations (

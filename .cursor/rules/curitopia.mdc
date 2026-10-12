@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Curitopia
 
-Read `AGENTS.md` and `docs/DECISIONS.md` before changing behaviour. The live UI is `app/page.tsx`. Preserve Quickfire, Focus, the SVG question map, and the accepted visual shell.
+Read `AGENTS.md` and `docs/DECISIONS.md` before changing behaviour. The signed-in home is the library in `app/page.tsx`. The workspace is `components/exploration-screen.tsx`. Preserve Quickfire, Focus, the SVG question map, and the accepted visual shell.
 
 - Quickfire capture stays uninterrupted: no required categories, coaching prompts, or dialogs between questions.
 - Focus starters (Investigate, Reframe, Connect, Challenge) are optional.
@@ -17,4 +17,4 @@ Read `AGENTS.md` and `docs/DECISIONS.md` before changing behaviour. The live UI 
 - Never send question text, titles, or other session content to analytics. Leave the existing Vercel Analytics component in place until D-015 settles that choice.
 - Keep the `typecheck` script. Do not set `typescript.ignoreBuildErrors`.
 - Do not add AI in this phase.
-- Authentication is implemented. Do not connect explorations or questions to the database, and do not apply further remote database changes, until the user asks for that work.
+- The current exploration is persisted for a signed-in user. The previous-explorations library is the signed-in home. Do not add rename or delete, and do not apply further remote database changes, until the user asks for that work.

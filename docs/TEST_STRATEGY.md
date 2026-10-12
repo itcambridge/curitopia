@@ -6,7 +6,7 @@ Prototype checks below apply to the current application. Persistence checks appl
 ## First inspect existing tooling
 `package.json` defines `dev`, `build`, `start`, and `typecheck` (`tsc --noEmit`). It does not define lint or frontend test scripts. No frontend test framework is installed, and none is approved (D-014).
 
-`next.config.mjs` still sets `typescript.ignoreBuildErrors` to `true`. Until that bypass is removed, report `pnpm typecheck` and `pnpm build` as separate results. A successful build does not yet mean the typecheck passed. After the approved change, `pnpm build` validates types and the `typecheck` script remains.
+`typescript.ignoreBuildErrors` has been removed. `pnpm build` validates types and the `typecheck` script remains. Report both results.
 
 Row-level security tests use pgTAP, run with the Supabase CLI command `supabase test db`. Add those tests with the database implementation. Do not install Vitest, Jest, Playwright, or Testing Library for this phase.
 

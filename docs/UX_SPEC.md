@@ -1,9 +1,7 @@
 # UX Specification
 
 ## Status
-The shell, Quickfire, Focus, map, review, and prioritisation behaviours below remain in force. The persistence lifecycle is the approved design. The running prototype still stores the exploration in page memory until that design is implemented.
-
-The running prototype seeds a sample Focus exploration and clears that memory when the user chooses "Start new exploration". Until implementation, that is what the screen does.
+The shell, Quickfire, Focus, map, review, and prioritisation behaviours below remain in force. A signed-in user lands on the previous-explorations library. Opening an item loads that exploration. Rename and delete controls are not built yet.
 
 ## Current shell
 Preserve the v0-generated dark navy interface:
@@ -19,14 +17,16 @@ Preserve the v0-generated dark navy interface:
 
 When an older saved exploration is open, statistics describe that exploration. The prototype heading "Today's exploration" should not imply that a restored exploration happened today.
 
-## Prototype session behaviour
-This is what `app/page.tsx` does today:
+## Workspace behaviour
+This is what the signed-in screens do:
 
-1. The page opens in Focus with a seeded set of sample questions.
-2. Switching between Focus and Quickfire keeps the current questions.
-3. End session & explore stops entry, shows the review, and allows priority toggles.
-4. Start new exploration clears the questions and returns to an empty active exploration.
-5. Refreshing the page discards the in-memory exploration and shows the sample questions again.
+1. Signing in opens the previous-explorations library. It lists that user's saved explorations, most recently updated first, and omits empty ones.
+2. New exploration opens an empty Focus workspace and does not insert a row. The first saved question creates the exploration.
+3. Opening an item loads that exploration. An in-progress exploration can continue. A completed exploration opens in review.
+4. Switching between Focus and Quickfire keeps the current questions and saves the mode once an exploration exists.
+5. End session & explore stops entry, shows the review, allows priority toggles, and marks a saved exploration complete.
+6. Start new exploration leaves the previous saved exploration in the library and opens another empty workspace.
+7. Refreshing an open exploration loads that same exploration. Refreshing a new workspace before the first save stays empty.
 
 ## Persistence-phase session lifecycle
 A signed-in confirmed user has many explorations. Each saved exploration is either in progress or complete. An unsaved empty workspace is local only.

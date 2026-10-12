@@ -3,12 +3,12 @@
 ## Mission
 Curitopia helps people explore curiosity by asking more questions, suspending judgement, and making their thinking visible. The product has two modes: Quickfire and Focus.
 
-The running exploration is still an in-memory prototype. Email and password authentication is implemented against the hosted Supabase project. The approved database schema and row-level security migration are in `supabase/migrations`. Do not connect explorations or questions to that database, and do not apply a further migration to a remote project, until the user asks for that work.
+Email and password authentication is implemented against the hosted Supabase project. The previous-explorations library is the signed-in home. Opening an exploration loads that saved session. Rename and delete are not built yet. Do not apply a further migration to a remote project until the user asks for that work.
 
 AI-assisted reflection stays a later phase after persistence. See `docs/AI_BEHAVIOUR.md`.
 
 ## First rule: inspect before changing
-Before implementing a task, inspect the existing repository, `package.json`, routing structure, installed dependencies, current components, styling system, and existing interactions. Treat the current v0-generated interface as the baseline to preserve. The live screen is `app/page.tsx`. Do not replace working code or redesign the app just because another approach is familiar.
+Before implementing a task, inspect the existing repository, `package.json`, routing structure, installed dependencies, current components, styling system, and existing interactions. Treat the current v0-generated interface as the baseline to preserve. The signed-in home is the library in `app/page.tsx`. The workspace is `components/exploration-screen.tsx`, opened at `/explorations/new` or `/explorations/[id]`. Do not replace working code or redesign the app just because another approach is familiar.
 
 ## Product principles
 - Encourage quantity of questions, not a score for question quality.
@@ -38,7 +38,7 @@ Before implementing a task, inspect the existing repository, `package.json`, rou
 - The orbital map must be rendered from question data (SVG), not generated as a bitmap.
 - Keep layout calculations deterministic for existing questions so the map does not jump unpredictably on every render.
 - Handle long text, small screens, large question counts, empty states, and reduced-motion preferences.
-- The approved persistence stack is Supabase Auth and managed Supabase PostgreSQL, with the Next.js app served from Linode at `https://curitopia.com`. Email and password include confirmation and password reset. There is no social login. The local Supabase stack is for migration tests only. Authentication screens are in place. Do not add database-backed explorations until that task is requested. Do not add an AI API.
+- The approved persistence stack is Supabase Auth and managed Supabase PostgreSQL, with the Next.js app served from Linode at `https://curitopia.com`. Email and password include confirmation and password reset. There is no social login. The local Supabase stack is for migration tests only. The signed-in home lists saved explorations. Do not add rename or delete until that task is requested. Do not add an AI API.
 - Titles are at most 120 trimmed characters. Question text is at most 2,000 trimmed characters. Deletion is permanent after explicit confirmation.
 - Test row-level security with pgTAP through `supabase test db`. Do not add a general-purpose frontend test framework unless a later decision approves one.
 - Never send question text, titles, emails, or other exploration content to analytics. The prototype still mounts Vercel Analytics. Do not remove or replace it until open item 8 under D-015 is decided.

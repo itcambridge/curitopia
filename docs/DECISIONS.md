@@ -17,7 +17,7 @@ Approved entries are the design default. They do not, by themselves, change the 
 ## D-003 — Map is data-driven
 **Decision:** Render the orbital visualisation from question data, using SVG.
 **Rationale:** The map must respond to newly entered questions and cannot be a static image.
-**Status:** In force. The live map is SVG driven by the question list. Saved explorations rebuild that map from stored questions and derive coordinates. Node colour is a deterministic function of the stable question id and is not stored. See D-012. The prototype still stores a decorative `color` until that design is implemented.
+**Status:** In force. The live map is SVG driven by the question list. Node colour is derived from the stable question id and is not stored. See D-012.
 
 ## D-004 — No AI in the prototype or the persistence phase
 **Decision:** AI summaries and semantic connections are deferred.
@@ -28,7 +28,7 @@ Approved entries are the design default. They do not, by themselves, change the 
 **Status:** Superseded as product direction on 2026-10-11 by D-007. Retained as history.
 **Decision:** Use local React state for the first prototype. No database, authentication, or cloud persistence.
 **Rationale:** Avoid infrastructure before the core interaction has been validated.
-**Consequences:** The running application still follows this decision. `app/page.tsx` holds the exploration in memory, and a refresh restores the seeded sample. The approved direction is D-007. The code changes when implementation is requested.
+**Consequences:** Superseded for the running application by D-007. The current exploration is stored in the hosted database. This entry remains the history of the prototype.
 
 ## D-006 — Preserve the accepted v0 design
 **Decision:** Keep the current v0-generated UI as the baseline and make targeted refinements only.
@@ -39,7 +39,7 @@ Approved entries are the design default. They do not, by themselves, change the 
 **Status:** Approved on 2026-10-11.
 **Decision:** Curitopia persists private explorations with Supabase Auth and PostgreSQL. Server-side sessions, versioned SQL migrations, and row-level security enforce that a user can read and write only their own explorations and questions.
 **Rationale:** Returning to explorations needs an account and a database. The repository had no competing provider. D-005 remains the history of the prototype.
-**Consequences:** The specs in `docs/` match this decision. The running app has not been migrated. The local migration in `supabase/migrations` is not applied to the hosted database until that is requested. Do not add the Supabase client dependencies or auth UI until implementation is requested. Related defaults are D-010 through D-015. The original hosting sentence named Vercel. That hosting choice is superseded by D-015. Schema, row-level security, and Supabase Auth are unchanged.
+**Consequences:** The specs in `docs/` match this decision. Authentication, the current exploration, and the previous-explorations library are implemented against the hosted project. Rename and delete are not built. Related defaults are D-010 through D-015. The original hosting sentence named Vercel. That hosting choice is superseded by D-015. Schema, row-level security, and Supabase Auth are unchanged.
 
 ## D-008 — AI remains after persistence
 **Status:** Accepted as direction on 2026-10-11. Implementation of AI is not approved.

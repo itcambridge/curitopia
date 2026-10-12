@@ -1,7 +1,7 @@
 # Architecture Notes
 
 ## Status
-The persistence architecture below is the approved design (D-007 through D-014 in `docs/DECISIONS.md`). Email and password authentication is implemented. Explorations and questions are still stored in memory.
+The persistence architecture below is the approved design (D-007 through D-014 in `docs/DECISIONS.md`). Email and password authentication is implemented. Saved explorations are listed and opened from the hosted database. Rename and delete are not built.
 
 Inspect the repository before implementation. Keep the current Next.js, React, TypeScript, Tailwind, and pnpm setup.
 
@@ -12,8 +12,8 @@ Verified from the repository on 2026-10-11. This is still the running applicatio
 - Next.js 16.4.0 App Router. The live page is `app/page.tsx`. The root layout is `app/layout.tsx`.
 - React 19 and TypeScript 5.7.
 - Tailwind CSS 4, with the existing global styles.
-- The orbital map is SVG rendered from the question array inside `app/page.tsx`.
-- Exploration state is React state in that page: questions, mode, ended flag, selected question, and view. There is no exploration record and no `localStorage`. The Supabase client is used for authentication only.
+- The orbital map is SVG rendered from the question array in `components/exploration-screen.tsx`. `app/page.tsx` loads the saved exploration and renders that screen.
+- The open exploration is loaded on the server and kept in React state while the person edits it. Saves go through the authenticated Supabase client and row-level security. There is no `localStorage`. Selected question, map or list view, and the composer draft stay in the browser.
 - `components/curitopia-app.tsx` is an earlier shell. Nothing imports it. It still contains fixed journey figures. Do not persist those figures or revive that shell as the data source.
 - `@vercel/analytics` is a dependency. `app/layout.tsx` renders it when `NODE_ENV` is `production`. That page-view component stays. Do not send question text, titles, emails, or other exploration content to analytics.
 - `typescript.ignoreBuildErrors` has been removed. `pnpm build` and `pnpm typecheck` both enforce types.
@@ -53,14 +53,14 @@ Production data lives only in the hosted Supabase project. The local Supabase CL
 
 Do not apply the exploration migration to the hosted project, change DNS, or change the Linode server until that work is requested. The open deployment choices are listed under D-015. They include the Linode process supervisor, the HTTPS certificate, DNS record shape, the GitHub release path, Auth redirect URLs, confirmation email transport, and whether Vercel Analytics stays after the host change.
 
-D-005 is the historical prototype decision. D-007 replaces it as the product direction. The code still follows D-005 until implementation starts.
+D-005 is the historical prototype decision. D-007 replaces it. The current exploration is stored in the hosted database.
 
 ### Application shape
 - Server-rendered account checks using a cookie-backed Supabase session.
 - The browser uses the publishable Supabase key. Queries run as the signed-in user so row-level security applies.
 - The service-role key bypasses row-level security. This phase does not need it in the application. Do not expose it to the browser, commit it, or use it to read user explorations from UI code.
 - Session refresh uses the Next.js 16 root `proxy.ts` and `supabase.auth.getClaims()`. Protected pages use the same verified claims. `getSession()` is not used to decide access.
-- Routes in place: `/login`, `/signup`, `/forgot-password`, `/reset-password`, and `/auth/confirm`. A signed-in person lands on `/`, which is still the in-memory workspace. `/explorations` and `/explorations/[id]` wait for the library task.
+- Routes in place: `/login`, `/signup`, `/forgot-password`, `/reset-password`, and `/auth/confirm`. A signed-in person lands on `/`, the previous-explorations library. `/explorations/new` is an unsaved workspace. `/explorations/[id]` opens that saved exploration. Rename and delete wait for a later task.
 - Dependencies to add when implementation starts: `@supabase/supabase-js` and `@supabase/ssr`. Database tests use the Supabase CLI and pgTAP. No other persistence library, and no general-purpose frontend test framework.
 
 ### Modules to add when implementation starts
@@ -124,8 +124,8 @@ The app sends confirmation and recovery links to `/auth/confirm`. That route acc
 ## Code that still differs from the approved design
 These are implementation gaps, not open design choices:
 
-1. **Storage.** The page still keeps one exploration in React state, including stored colours and numeric ids. Authentication does not write those questions.
-2. **Accounts.** Sign-in, registration, confirmation, password reset, and sign-out are implemented. The library and database-backed workspace are not.
+1. **Library actions.** The library lists, opens, continues, and reviews saved explorations. Rename and delete are not built.
+2. **Accounts.** Sign-in, registration, confirmation, password reset, and sign-out are implemented.
 3. **Analytics.** The page-view component is already present. It must not receive exploration content. Whether it remains on Linode is undecided.
 
 ## Later, not this phase

@@ -1,7 +1,7 @@
 # Product Brief — Curitopia
 
 ## Status
-The persistence design is approved. See `docs/DECISIONS.md`. The prototype in the repository still keeps the exploration in memory until implementation starts. This brief does not authorise migrations or authentication code.
+The persistence design is approved. See `docs/DECISIONS.md`. Authentication, saving an exploration, and the previous-explorations library are implemented. Rename and delete are not built.
 
 ## Product idea
 Curitopia helps people keep asking questions, move beyond their first thought, and see where their thinking leads. The next phase turns the prototype into a private, persistent application: people can sign in, keep explorations, prioritise questions, and return to them later.
@@ -47,7 +47,7 @@ The next phase adds:
 7. Renaming an exploration within 120 characters, and permanently deleting one after confirmation.
 8. Clear saving, loading, and error states. Question text is limited to 2,000 characters.
 
-Approved technical default: Supabase Auth and managed Supabase PostgreSQL, with the existing Next.js application served from Linode at `https://curitopia.com`. The local Supabase stack is for migration tests. See `docs/ARCHITECTURE.md` and `docs/DECISIONS.md`. The prototype in the repository still keeps the exploration in memory.
+Approved technical default: Supabase Auth and managed Supabase PostgreSQL, with the existing Next.js application served from Linode at `https://curitopia.com`. The local Supabase stack is for migration tests. See `docs/ARCHITECTURE.md` and `docs/DECISIONS.md`. Saved explorations are listed in the library. Rename and delete are not built yet.
 
 ## Non-goals
 - A clinical or therapeutic tool, or claims of guaranteed stress relief.

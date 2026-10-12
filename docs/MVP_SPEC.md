@@ -1,7 +1,7 @@
 # MVP Specification and Acceptance Criteria
 
 ## Status
-The prototype baseline describes the frontend the repository provides today. The persistence phase is the approved design in `docs/DECISIONS.md`. Building it waits until implementation is requested. The current app still stores the exploration in memory.
+The prototype baseline describes the original frontend. Authentication, saving an exploration, and the previous-explorations library are implemented. Rename and delete are not built yet.
 
 ## Prototype baseline
 The current application is a local Next.js prototype. It demonstrates Quickfire, Focus, question entry, priorities after the session ends, optional Focus perspective starters, the SVG orbital map, and accurate basic statistics. Session data lives in React state.
