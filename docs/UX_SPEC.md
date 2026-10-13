@@ -33,14 +33,14 @@ A signed-in confirmed user has many explorations. Each saved exploration is eith
 
 1. **Start.** New exploration opens the existing workspace in Focus with an empty question list and an empty composer. It does not copy the sample questions, and it does not insert a database row.
 2. **Capture.** The user adds questions. The mode switch remains available and does not delete questions. Focus starters remain optional. The composer accepts a question only when the trimmed text is from 1 to 2,000 characters.
-3. **Save.** The first accepted question creates the exploration and that question in one save. A title entered before that save is included. Later accepted questions, mode changes, renames, completion, and priority changes update that exploration. The screen shows a quiet status: Saving, Saved, or Could not save. Quickfire does not show a dialog after a question.
+3. **Save.** The first accepted question creates the exploration and that question in one save. A title entered before that save is included. Later accepted questions, mode changes, completion, priority changes, and hide or restore update that exploration. The screen shows a quiet status: Saving, Saved, or Could not save. Quickfire does not show a dialog after a question. Rename is specified below and is not built.
 4. **Leave.** Closing or signing out before the first successful save leaves the library unchanged. After a successful save, the exploration remains in the library.
 5. **Finish.** End session & explore marks the exploration complete, shows the review, and enables priority toggles. The exploration stays in the library.
 6. **Review.** Opening a complete exploration restores the map, list, full text, counts, and priority controls. The composer stays disabled. Priority changes are saved.
 7. **Continue.** Opening an in-progress exploration restores questions in entry order and enables the composer. New questions append after the saved ones.
 8. **Start another.** Start new exploration opens another unsaved workspace. The previous saved exploration remains in the library.
-9. **Rename.** The user can set or clear a title on a saved exploration. The trimmed title is at most 120 characters. A whitespace-only title is rejected. Clearing the title removes the custom name.
-10. **Delete.** Delete asks for confirmation and states that deletion is permanent. Confirming removes that exploration and its questions. Cancelling leaves it unchanged.
+9. **Rename.** Specified, and not built. The user will be able to set or clear a title on a saved exploration. The trimmed title is at most 120 characters. A whitespace-only title is rejected. Clearing the title removes the custom name.
+10. **Delete.** Specified, and not built. Delete will ask for confirmation and state that deletion is permanent. Confirming removes that exploration and its questions. Cancelling leaves it unchanged.
 
 A complete exploration stays in review. Adding further questions means starting a new exploration.
 
@@ -49,9 +49,9 @@ This behaviour is available in the workspace. The hosted database already has `i
 
 A person can hide a satellite question and later restore it. Hiding keeps the row. Text, id, position, role, priority, perspective origin, and derived colour stay as they were. Hidden questions are left out of the normal map, the list, and the visible question counts. The interface provides a way to reveal hidden questions and restore one.
 
-The central question cannot be hidden. If the person wants a different centre, they start a new exploration. The refusal says: "The central question anchors this exploration. Start a new exploration to explore a different central question." The database does not promote a satellite into the central role.
+The central question cannot be hidden. Its Hide control is disabled, and selecting it explains: "The central question anchors this exploration. Start a new exploration to explore a different central question." The database does not promote a satellite into the central role.
 
-The last visible question cannot be hidden. Quickfire can therefore hide satellites until one remains. Focus can hide satellites while the central question stays visible.
+The last visible question cannot be hidden. Its Hide control is disabled. Quickfire can therefore hide satellites until one remains. Focus can hide satellites while the central question stays visible. Hide and Restore sit beside the question in the list and do not select it. If the database rejects a hide, the question stays visible and the screen says why, without discarding the exploration. Other save failures keep the existing Could not save state and retry.
 
 Hiding or restoring a question in a completed exploration does not reopen it. The composer stays disabled, and the exploration remains complete.
 
@@ -67,17 +67,17 @@ Each item shows:
 - Display title.
 - Mode: Focus or Quickfire.
 - Status: In progress or Complete.
-- Question count. Once hiding is available, this is the visible count.
+- Question count: visible questions only. When some questions are hidden, the row also shows that hidden count.
 - When it was last updated.
 
 Actions on each item:
 
 - **Continue** for an in-progress exploration.
 - **Review** for a complete exploration.
-- **Rename.**
-- **Delete**, which opens confirmation first.
+- **Rename.** Specified, not built.
+- **Delete**, which would open confirmation first. Specified, not built.
 
-Display title is the user's title when they have set one. Otherwise it is the central question, otherwise the first question, otherwise "Untitled exploration". A long fallback is shortened on the library row; the full question remains available inside the exploration.
+Display title is the user's title when they have set one. Otherwise it is the visible central question, otherwise the first visible question, otherwise "Untitled exploration". A long fallback is shortened on the library row; the full question remains available inside the exploration.
 
 Empty library: explain that explorations will appear here, and offer New exploration.
 

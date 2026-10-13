@@ -4,7 +4,7 @@
 The prototype baseline describes the original frontend. Authentication, saving an exploration, and the previous-explorations library are implemented. Hiding and restoring a question is implemented. Rename and delete are not built yet.
 
 ## Prototype baseline
-The current application is a local Next.js prototype. It demonstrates Quickfire, Focus, question entry, priorities after the session ends, optional Focus perspective starters, the SVG orbital map, and accurate basic statistics. Session data lives in React state.
+Historical. This section describes the original in-memory frontend. The running application is the status above: accounts, saved explorations, the library, and hide and restore. Session data for a signed-in user lives in the hosted database. The behaviours below still describe Quickfire, Focus, the map, and review, with persistence added on top.
 
 ### In scope
 - Two modes: Quickfire and Focus.
@@ -34,7 +34,7 @@ The current application is a local Next.js prototype. It demonstrates Quickfire,
 13. The layout remains usable at desktop and mobile widths without page-level horizontal scrolling.
 14. Reduced-motion preferences are respected.
 15. The prototype does not call an AI service. The persistence design is approved; implementing it waits until that work is requested.
-16. Lint, type-check, tests, and production build are run where scripts exist. Actual results are reported. `package.json` currently provides `dev`, `build`, `start`, and `typecheck`. `next.config.mjs` still sets `typescript.ignoreBuildErrors` until the approved removal of that bypass.
+16. Lint, type-check, tests, and production build are run where scripts exist. Actual results are reported. `package.json` provides `dev`, `build`, `start`, and `typecheck`. The `typescript.ignoreBuildErrors` bypass described in the original prototype has been removed (D-013).
 
 ## Persistence phase
 This phase is the approved design. Once implementation is requested and built, it adds accounts and private saved explorations on top of the prototype baseline. It does not add AI, sharing, social login, or a second exploration model.

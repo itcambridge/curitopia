@@ -5,15 +5,15 @@ The persistence architecture below is the approved design (D-007 through D-014 i
 
 Inspect the repository before implementation. Keep the current Next.js, React, TypeScript, Tailwind, and pnpm setup.
 
-## Confirmed prototype
-Verified from the repository on 2026-10-11. This is still the running application:
+## Current application
+Verified from the repository. This is the running application:
 
 - Package manager: pnpm 12.3.4, with `pnpm-lock.yaml`.
-- Next.js 16.4.0 App Router. The live page is `app/page.tsx`. The root layout is `app/layout.tsx`.
+- Next.js 16.4.0 App Router. The signed-in home is the library in `app/page.tsx`. The workspace is `components/exploration-screen.tsx`, opened at `/explorations/new` or `/explorations/[id]`. The root layout is `app/layout.tsx`.
 - React 19 and TypeScript 5.7.
 - Tailwind CSS 4, with the existing global styles.
-- The orbital map is SVG rendered from the question array in `components/exploration-screen.tsx`. `app/page.tsx` loads the saved exploration and renders that screen.
-- The open exploration is loaded on the server and kept in React state while the person edits it. Saves go through the authenticated Supabase client and row-level security. There is no `localStorage`. Selected question, map or list view, and the composer draft stay in the browser.
+- The orbital map is SVG rendered from the visible questions in `components/exploration-screen.tsx`. Hidden questions are omitted from that layout.
+- The open exploration is loaded on the server and kept in React state while the person edits it. Saves go through server actions and the authenticated Supabase client, so row-level security applies. There is no `localStorage`. Selected question, map or list view, and the composer draft stay in the browser.
 - `components/curitopia-app.tsx` is an earlier shell. Nothing imports it. It still contains fixed journey figures. Do not persist those figures or revive that shell as the data source.
 - `@vercel/analytics` is a dependency. `app/layout.tsx` renders it when `NODE_ENV` is `production`. That page-view component stays. Do not send question text, titles, emails, or other exploration content to analytics.
 - `typescript.ignoreBuildErrors` has been removed. `pnpm build` and `pnpm typecheck` both enforce types.
@@ -21,7 +21,7 @@ Verified from the repository on 2026-10-11. This is still the running applicatio
 - Scripts in `package.json`: `dev`, `build`, `start`, `typecheck`. There is no lint script and no frontend test script.
 - `.cursor/rules/curitopia.mdc` is the always-applied project rule.
 
-Question identity in the prototype is a number, often `Date.now()`, plus a decorative colour stored at insert time. The approved persistent contract uses a UUID and derives colour from that id. See `docs/DATA_MODEL.md`.
+The earlier prototype used numeric question ids, often `Date.now()`, and stored a decorative colour. The running contract uses a UUID and derives colour from that id. See `docs/DATA_MODEL.md`. D-005 records the in-memory prototype and is superseded.
 
 ## Prototype boundaries
 Adapt names to the current page. Do not duplicate the live UI.
@@ -41,17 +41,17 @@ Approved default:
 
 - Keep this Next.js, React, and TypeScript application.
 - Serve it from Linode at `https://curitopia.com`. DNS for that domain points at Linode, and browsers reach it over HTTPS. See D-015.
-- Add Supabase Auth for registration, email confirmation, sign-in, password reset, and sign-out. No social login. Auth is the managed Supabase project that already exists.
-- Store explorations and questions in that project's managed PostgreSQL. The schema and row-level security in `supabase/migrations/20261011162400_create_explorations.sql` stay the contract.
+- Supabase Auth provides registration, email confirmation, sign-in, password reset, and sign-out. No social login. Auth is the managed Supabase project that already exists.
+- Store explorations and questions in that project's managed PostgreSQL. The schema and row-level security in the two applied migrations stay the contract.
 - Require a signed-in confirmed user before any persistent exploration is written or read.
-- Enforce ownership with row-level security. Exercise those policies with pgTAP (`supabase test db`) on the local Supabase stack before they are applied to the hosted project.
+- Enforce ownership with row-level security. The policies are in the applied SQL. pgTAP coverage exists and has not been run, so runtime isolation is still unverified. See `docs/TEST_STRATEGY.md`.
 - Keep source in GitHub. The current origin is `https://github.com/itcambridge/curitopia.git`.
-- Keep AI out of this phase. Stored questions may later be read by an approved analysis phase. This phase does not add a model SDK, an analysis table, or an AI route.
+- Keep AI out until a reflection task is explicitly approved. Stored questions may later be read by that phase. This phase does not add a model SDK, an analysis table, or an AI route. The proposal is `docs/REFLECTION_SPEC.md`.
 
 ## Production and local databases
 Production data lives only in the hosted Supabase project. The local Supabase CLI stack, including Docker Postgres on port 54322, is a place to rehearse migrations and run `supabase test db`. It is not a second production database and it does not receive real accounts.
 
-Do not apply the exploration migration to the hosted project, change DNS, or change the Linode server until that work is requested. The open deployment choices are listed under D-015. They include the Linode process supervisor, the HTTPS certificate, DNS record shape, the GitHub release path, Auth redirect URLs, confirmation email transport, and whether Vercel Analytics stays after the host change.
+The exploration SQL and the later hide SQL were applied to the hosted project through the SQL Editor. Do not recreate those tables or edit the applied migration files. A further schema change is a new forward-only migration, reviewed as SQL, and applied only when that work is requested. Do not run `supabase db push` or `supabase db reset` as part of an application task. Do not change DNS or the Linode server until deployment work is requested. The open deployment choices are listed under D-015. They include the Linode process supervisor, the HTTPS certificate, DNS record shape, the GitHub release path, Auth redirect URLs, confirmation email transport, and whether Vercel Analytics stays after the host change.
 
 D-005 is the historical prototype decision. D-007 replaces it. The current exploration is stored in the hosted database.
 
@@ -61,20 +61,22 @@ D-005 is the historical prototype decision. D-007 replaces it. The current explo
 - The service-role key bypasses row-level security. This phase does not need it in the application. Do not expose it to the browser, commit it, or use it to read user explorations from UI code.
 - Session refresh uses the Next.js 16 root `proxy.ts` and `supabase.auth.getClaims()`. Protected pages use the same verified claims. `getSession()` is not used to decide access.
 - Routes in place: `/login`, `/signup`, `/forgot-password`, `/reset-password`, and `/auth/confirm`. A signed-in person lands on `/`, the previous-explorations library. `/explorations/new` is an unsaved workspace. `/explorations/[id]` opens that saved exploration. Rename and delete wait for a later task.
-- Dependencies to add when implementation starts: `@supabase/supabase-js` and `@supabase/ssr`. Database tests use the Supabase CLI and pgTAP. No other persistence library, and no general-purpose frontend test framework.
+- Installed persistence libraries: `@supabase/supabase-js` and `@supabase/ssr`. Database tests use the Supabase CLI and pgTAP. No other persistence library, and no general-purpose frontend test framework.
 
-### Modules to add when implementation starts
+### Modules in place
 Keep these small. Leave map layout in its current form.
 
 - Account screens for registration, confirmation, sign-in, password reset, and sign-out.
 - Exploration library, listing only explorations that have at least one question.
-- A save-status indicator on the workspace.
-- A delete confirmation that states the delete is permanent.
+- A save-status indicator on the workspace: Saving, Saved, or Could not save, with retry.
+- Hide and restore for eligible questions. A rejected hide returns the row to the stored visible state.
 - A typed data-access boundary that maps database rows to the UI question model and derives colour from the question id.
+
+Still absent: rename, a delete confirmation, and AI reflection.
 
 The page may keep a local copy of the open exploration while a request is in flight. After a successful response, the server row is the source of truth. A failed request leaves the local change in place and surfaces the error described in `docs/UX_SPEC.md`.
 
-The first accepted question calls `public.create_exploration_with_first_question`, which inserts the exploration and that question in one statement. The owner is `auth.uid()`. Until that statement commits, there is no library row. Later writes are per change: insert one question, update mode or completion, update one priority flag, rename, or delete the exploration. Sending the entire question list on every keystroke is not the write model. See `docs/DATA_MODEL.md`.
+The first accepted question calls `public.create_exploration_with_first_question`, which inserts the exploration and that question in one statement. The owner is `auth.uid()`. Until that statement commits, there is no library row. Later writes are per change: insert one question, update mode or completion, update one priority flag, or update `is_hidden`. Rename and delete are specified and not built. Sending the entire question list on every keystroke is not the write model. See `docs/DATA_MODEL.md`.
 
 Question ids are created in the client before the insert so a retry of the same question does not create a second row. Positions are allocated with the insert so two overlapping adds cannot claim the same order. Colour uses the id, not the position. See `docs/DATA_MODEL.md`.
 
@@ -88,7 +90,7 @@ Names the application reads:
 Store real values in the local environment used for migration tests and, when deployment is requested, on the Linode host. `.gitignore` already ignores `.env` files and allows a value-free `.env.example`. Do not commit filled env files, keys, or user data. An example file, if added during implementation, lists names only. Do not put the hosted database password or a Supabase access token in the repository.
 
 ### Migrations and security
-- Keep SQL migrations in `supabase/migrations`. The exploration schema is `20261011162400_create_explorations.sql`. Do not apply it to a remote project until that is requested.
+- Keep SQL migrations in `supabase/migrations`. The applied files are `20261011162400_create_explorations.sql` and `20261013191000_add_question_hidden.sql`. Do not edit them. The next schema change is a new file, applied only when requested.
 - Enable row-level security on application tables before any user data is written. The migration does this.
 - Policies restrict rows to `auth.uid()`.
 - The anonymous role has no policies on exploration or question tables.
@@ -121,12 +123,12 @@ The app sends confirmation and recovery links to `/auth/confirm`. That route acc
 ### Typecheck
 `typescript.ignoreBuildErrors` is removed. Keep `"typecheck": "tsc --noEmit"`. A production build fails on type errors.
 
-## Code that still differs from the approved design
-These are implementation gaps, not open design choices:
+## Remaining gaps
+These are unfinished product pieces, not open design choices:
 
 1. **Library actions.** The library lists, opens, continues, and reviews saved explorations. Rename and delete are not built.
-2. **Accounts.** Sign-in, registration, confirmation, password reset, and sign-out are implemented.
+2. **Verification.** Typecheck and the production build have passed for the current application. Hosted catalog checks for hiding were reported as passing. Runtime hide-and-restore and cross-account checks have not.
 3. **Analytics.** The page-view component is already present. It must not receive exploration content. Whether it remains on Linode is undecided.
 
 ## Later, not this phase
-AI summaries, semantic clustering, sharing, collaboration, and realtime presence are outside this phase. Social login and guest persistence are excluded by D-010. Persistence should leave question text, order, role, priority, and perspective origin intact so a later analysis phase can read them without inventing a second store.
+AI reflection is specified as a proposal in `docs/AI_BEHAVIOUR.md` and `docs/REFLECTION_SPEC.md`. It is not implemented, and this phase does not add a model SDK, an analysis table, or an AI route. Sharing, collaboration, and realtime presence stay out. Social login and guest persistence are excluded by D-010. Saved text, order, role, priority, perspective origin, and `is_hidden` are the inputs a later analysis phase would read. Hidden questions stay out of that analysis unless the user includes them.

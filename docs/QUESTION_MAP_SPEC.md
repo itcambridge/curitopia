@@ -9,6 +9,9 @@ The question map makes the quantity and spread of questions visible. It is an in
 - Thin orbit lines provide structure; optional connectors may link the central question to satellites.
 - Colour variation is decorative, derived from the stable question id, and must not imply unsupported semantic categories. Do not store colour.
 
+## Hidden questions
+The map is drawn from visible questions only. A hidden question keeps its id and derived colour, and it is not given an orbital slot. Showing hidden questions uses the separate list, not extra map nodes. Restoring a question includes it in the next layout of the visible set.
+
 ## Placement
 - Calculate node positions from the question count, node sizes and available viewport.
 - Use a deterministic layout for a given set of questions and viewport so the map remains stable.

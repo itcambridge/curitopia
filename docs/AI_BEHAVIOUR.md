@@ -1,31 +1,34 @@
-# AI Behaviour — Deferred
+# AI Behaviour — Proposed Next Phase
 
 ## Current decision
-No AI calls are part of the prototype or the persistence phase. Do not add model SDKs, AI API routes, AI API keys, or AI-generated content while accounts and saved explorations are being specified or, later, implemented.
+No AI calls are part of the running application. Do not add model SDKs, AI API routes, AI API keys, or AI-generated content until a separate task approves that work.
 
-Persistence may store the user's questions so a future phase can analyse an exploration the user chooses to review. This phase does not add analysis tables, prompt logs, embeddings, or jobs that read those questions.
+Accounts, saved explorations, the library, and hiding are implemented. Reflection is the proposed next product phase. `docs/REFLECTION_SPEC.md` describes the experience for review. It is not permission to build it. D-008 and D-017 record that limit.
 
-## Potential future use
-A later version may use AI to:
+This phase does not add analysis tables, prompt logs, embeddings, or jobs that read questions.
 
-- Summarise themes after a Quickfire session.
-- Identify possible connections between questions.
-- Offer optional Focus prompts beyond the current fixed starters.
-- Suggest a concise review of a saved exploration.
+## What reflection is for
+When the user asks, or after they finish a session, reflection should help them:
 
-That work starts only after persistence is in place and after a separate product and privacy decision. See `docs/DECISIONS.md`.
+- Notice recurring themes across their questions.
+- See possible connections between questions that do not look related.
+- Read their prioritised questions in the context of the wider exploration.
+- Notice important questions that are still unanswered.
+- Decide which questions may be worth pursuing through further research or experimentation.
 
-## Guardrails for a future implementation
-- Quickfire capture must remain uninterrupted. Any AI reflection happens after the session, or when the user explicitly asks for a review of a saved exploration.
-- Label generated interpretations as suggestions, not facts.
-- Preserve the user's original questions unchanged. Generated text lives beside the exploration, in a store specified at that time.
-- Never invent questions and present them as user-authored.
+The last item stops at the suggestion. How an experiment would be planned is a separate future specification. Do not add that planner inside the reflection phase.
+
+## Design principles
+- Preserve original user-authored questions unchanged. Generated text lives beside the exploration, in a store specified when implementation is approved.
+- Treat interpretations as suggestions, never facts. Label them that way in the interface.
+- Treat prioritisation as a preference signal. A starred question is one the user chose to mark. It is not an objective measure of importance, and an unstarred question is not unimportant.
+- Exclude hidden questions by default. Include them only when the user explicitly chooses that control for that reflection.
+- Keep Quickfire capture uninterrupted. No coaching, themes, or model calls while questions are being entered. Analysis happens after End session, or when the user deliberately requests reflection on a saved exploration.
+- Preserve privacy and ownership. Send only the exploration the signed-in owner asked to analyse. Signing in and saving an exploration is not consent to send question text to a model. Decide the provider, retention, cost, and consent before any call.
+- Do not send question text, titles, or other exploration content to analytics.
+- When AI is eventually implemented, validate model output against a typed schema, handle failure without changing the saved exploration, and show a loading state that does not block reading the questions.
 - Do not diagnose mental-health conditions or promise therapeutic outcomes.
-- Use typed, validated output schemas and graceful failure handling. A failed model call leaves the saved exploration intact.
-- Decide privacy, retention, cost, and consent before sending stored question text to an external model. Signing in and saving an exploration is not that consent.
-- Send only the exploration the user asked to analyse, for the signed-in owner.
-- Exclude hidden questions unless the user explicitly chooses to include them.
-- AI analysis must be separately approved and specified before implementation.
+- Never invent questions and present them as user-authored.
 
 ## Relationship to saved data
-The approved question store keeps text, order, role, priority, and perspective origin. Those fields are sufficient for a later review. Do not add model output columns to `questions` or `explorations` during the persistence phase.
+The question store already keeps text, order, role, priority, perspective origin, and `is_hidden`. Those fields are the inputs. Do not add model-output columns to `questions` or `explorations` as part of an unrelated change. A reflection record, if one is approved later, is a separate store.

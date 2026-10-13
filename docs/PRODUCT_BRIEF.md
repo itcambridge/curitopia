@@ -36,18 +36,22 @@ A deliberate exploration of a central question or theme. The theme remains visib
 - Saving, loading, and failure are visible. A failed save does not pretend the exploration was stored.
 
 ## Persistence phase
-The next phase adds:
+Implemented:
 
 1. Registration with email and password, email confirmation, sign-in, password reset, and sign-out. No social login.
 2. Private explorations stored for a signed-in confirmed user. The exploration is created when its first question is saved.
-3. Saving and restoring questions, priorities, central and satellite roles, and Focus perspective origins.
-4. A previous-explorations library that omits empty explorations.
-5. Reopening a completed exploration for review.
+3. Saving and restoring questions, priorities, central and satellite roles, Focus perspective origins, and hidden state.
+4. A previous-explorations library that omits empty explorations and opens each exploration at its own URL.
+5. Reopening a completed exploration for review, including priority changes, without adding questions.
 6. Continuing an unfinished saved exploration.
-7. Renaming an exploration within 120 characters, and permanently deleting one after confirmation.
-8. Clear saving, loading, and error states. Question text is limited to 2,000 characters.
+7. Clear saving, loading, and error states. Question text is limited to 2,000 characters. A failed save is not reported as stored.
 
-Approved technical default: Supabase Auth and managed Supabase PostgreSQL, with the existing Next.js application served from Linode at `https://curitopia.com`. The local Supabase stack is for migration tests. See `docs/ARCHITECTURE.md` and `docs/DECISIONS.md`. Saved explorations are listed in the library. Rename and delete are not built yet.
+Specified and not built: renaming an exploration within 120 characters, and permanently deleting one after confirmation.
+
+Approved technical default: Supabase Auth and managed Supabase PostgreSQL, with the existing Next.js application served from Linode at `https://curitopia.com`. The local Supabase stack is for migration tests. See `docs/ARCHITECTURE.md` and `docs/DECISIONS.md`. Production hosting on Linode is the intended deployment and is not confirmed complete.
+
+## Proposed next phase
+AI-assisted reflection after a session, described in `docs/AI_BEHAVIOUR.md` and `docs/REFLECTION_SPEC.md`. That proposal is not approval to implement it. Experiment planning is a later specification.
 
 ## Non-goals
 - A clinical or therapeutic tool, or claims of guaranteed stress relief.

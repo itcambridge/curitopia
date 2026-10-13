@@ -2,7 +2,7 @@
 
 Record decisions here. Add new entries with date, decision, rationale, and consequences. Superseded entries stay in the log.
 
-Approved entries are the design default. They do not, by themselves, change the application. Creating migrations and implementing authentication still wait for a request to start that work.
+Approved entries are the design default. Each entry records whether that decision is already in the application. A proposed entry is a review document. It is not permission to build it.
 
 ## D-001 — Two modes
 **Decision:** Curitopia has Quickfire and Focus modes.
@@ -45,19 +45,19 @@ Approved entries are the design default. They do not, by themselves, change the 
 **Status:** Accepted as direction on 2026-10-11. Implementation of AI is not approved.
 **Decision:** AI-assisted reflection is a later phase. The persistence implementation must not call a model or store model output.
 **Rationale:** Saved questions need an owner and a stable record before any analysis. Consent to store a question is separate from consent to send it to a model.
-**Consequences:** `docs/AI_BEHAVIOUR.md` remains the guardrail. A future AI decision should be a new entry.
+**Consequences:** `docs/AI_BEHAVIOUR.md` remains the guardrail. D-017 records the proposed reflection behaviour. It does not approve an implementation.
 
 ## D-009 — Exploration lifecycle
 **Status:** Approved on 2026-10-11 with D-007.
 **Decision:** In-progress explorations can be continued. Completed explorations can be reopened for review, including priority changes, and do not accept new questions. Rename is available on both. Delete requires confirmation and then removes that exploration permanently. Starting another exploration keeps the previous saved one in the library.
 **Rationale:** The prototype uses one in-memory list and clears it on "Start new exploration". Persistent use needs a library and a distinction between continue and review.
-**Consequences:** The UX and acceptance criteria follow this lifecycle. Moving a completed exploration back to in-progress capture is out of scope. An exploration row is created with its first saved question (D-012), so an unsaved empty workspace is not a library item.
+**Consequences:** The UX and acceptance criteria follow this lifecycle. Moving a completed exploration back to in-progress capture is out of scope. An exploration row is created with its first saved question (D-012), so an unsaved empty workspace is not a library item. Continue, review, and the library are in the application. Rename and delete are still specified only.
 
 ## D-010 — Account access
 **Status:** Approved on 2026-10-11.
 **Decision:** The first release uses email and password. Registration requires email confirmation. Password reset is included. Social login is not included. A persistent exploration requires a signed-in user with a confirmed email.
 **Rationale:** Email and password covers registration, sign-in, and recovery without adding identity providers. Confirmation keeps explorations off unverified addresses. Anonymous cloud storage is a different product.
-**Consequences:** Signed-out and unconfirmed visitors see account screens and cannot read or write saved explorations. There is no guest persistence and no social-login button. The in-memory prototype remains only until this access model is implemented.
+**Consequences:** Signed-out and unconfirmed visitors see account screens and cannot read or write saved explorations. There is no guest persistence and no social-login button. The earlier in-memory prototype is not the running application.
 
 ## D-011 — Limits and deletion
 **Status:** Approved on 2026-10-11.
@@ -96,7 +96,7 @@ These are not decided by D-015:
 2. Where the HTTPS certificate is issued and renewed.
 3. The DNS provider, the address records, and whether `www.curitopia.com` redirects to the apex.
 4. How a GitHub revision is released onto Linode.
-5. When `supabase/migrations/20261011162400_create_explorations.sql` is applied to the hosted Supabase project.
+5. Whether the hosted project's Supabase migration-history table matches the files in `supabase/migrations`. The exploration SQL and the hide SQL were applied through the hosted SQL Editor. This repository has not run `supabase db push`, and the documentation audit did not reconnect to confirm the live catalog again. Further changes are new forward-only migrations. Do not edit those applied files and do not recreate `explorations` or `questions`.
 6. Applying the Supabase Auth site URL and redirect allow list in the hosted project dashboard. The application expects the values documented in `docs/ARCHITECTURE.md`. That dashboard change has not been made from this repository.
 7. Which mail transport sends confirmation and password-reset messages.
 8. Whether the existing Vercel Analytics component remains, is replaced, or is removed on Linode. D-013 still forbids sending exploration content.
@@ -105,4 +105,10 @@ These are not decided by D-015:
 **Status:** Approved on 2026-10-13. The hosted database has the column, and the workspace can hide and restore questions.
 **Decision:** A question can be hidden and later restored. Hiding sets `questions.is_hidden` and does not delete the row. Text, id, position, role, priority, perspective origin, and derived colour stay. Hidden questions are omitted from the normal map, list, and visible counts. The interface must reveal hidden questions so one can be restored. A central question cannot be hidden; a different centre means a new exploration. The last visible question cannot be hidden. Hiding or restoring does not reopen a completed exploration. Future AI analysis excludes hidden questions unless the user explicitly includes them.
 **Rationale:** People need to set a question aside without losing it or changing the exploration's centre. A check and a locking trigger keep those limits even if the interface is wrong.
-**Consequences:** `supabase/migrations/20261013191000_add_question_hidden.sql` is the forward-only change. The same statements are in `supabase/scripts/add_question_hidden.sql` for the hosted SQL Editor. Existing questions default to visible. Row-level security and the deferred non-empty checks stay as they are. The friendly refusal for a central question is: "The central question anchors this exploration. Start a new exploration to explore a different central question."
+**Consequences:** `supabase/migrations/20261013191000_add_question_hidden.sql` is the forward-only change. The same statements are in `supabase/scripts/add_question_hidden.sql` for the hosted SQL Editor. Existing questions default to visible. Row-level security and the deferred non-empty checks stay as they are. The friendly refusal for a central question is: "The central question anchors this exploration. Start a new exploration to explore a different central question." After that script, the user reported that all 16 catalog checks in `supabase/scripts/verify_question_hidden.sql` passed. Those checks do not hide a row and do not sign in as two users. End-to-end hide and restore, and cross-account isolation, are still unverified. See `docs/TEST_STRATEGY.md`.
+
+## D-017 — AI-assisted reflection, proposed
+**Status:** Proposed on 2026-10-13. Not approved for implementation.
+**Decision:** The next product phase, once approved as its own task, is post-session reflection. It may suggest themes, possible connections, a reading of prioritised questions in the context of the wider exploration, important unanswered questions, and questions that may be worth research or experimentation. It does not change the user's questions, and it does not plan the experiment.
+**Rationale:** Persistence, the library, and hiding are in the application. Reflection is the remaining product step described in `docs/AI_BEHAVIOUR.md`. Sending question text to a model needs its own privacy decision, which sign-in does not provide.
+**Consequences:** `docs/REFLECTION_SPEC.md` is the proposal to review. Building the model call, the reflection screen, or an experiments spec waits for an explicit task. D-008 still forbids adding that work inside a persistence change.

@@ -3,9 +3,11 @@
 ## Mission
 Curitopia helps people explore curiosity by asking more questions, suspending judgement, and making their thinking visible. The product has two modes: Quickfire and Focus.
 
-Email and password authentication is implemented against the hosted Supabase project. The previous-explorations library is the signed-in home. Opening an exploration loads that saved session. Rename and delete are not built yet. Do not apply a further migration to a remote project until the user asks for that work.
+Email and password authentication is implemented against the hosted Supabase project. The previous-explorations library is the signed-in home. Opening an exploration loads that saved session. Questions can be hidden and restored. The central question and the last visible question stay visible. Rename and delete are not built yet.
 
-AI-assisted reflection stays a later phase after persistence. See `docs/AI_BEHAVIOUR.md`.
+Database changes, when requested, are new forward-only migrations applied through the hosted Supabase workflow. Do not edit applied migration files, and do not recreate `explorations` or `questions`.
+
+AI-assisted reflection is the proposed next phase. It is specified in `docs/AI_BEHAVIOUR.md` and `docs/REFLECTION_SPEC.md` and is not implemented. Do not add an AI API until that work is explicitly requested.
 
 ## First rule: inspect before changing
 Before implementing a task, inspect the existing repository, `package.json`, routing structure, installed dependencies, current components, styling system, and existing interactions. Treat the current v0-generated interface as the baseline to preserve. The signed-in home is the library in `app/page.tsx`. The workspace is `components/exploration-screen.tsx`, opened at `/explorations/new` or `/explorations/[id]`. Do not replace working code or redesign the app just because another approach is familiar.
@@ -38,9 +40,10 @@ Before implementing a task, inspect the existing repository, `package.json`, rou
 - The orbital map must be rendered from question data (SVG), not generated as a bitmap.
 - Keep layout calculations deterministic for existing questions so the map does not jump unpredictably on every render.
 - Handle long text, small screens, large question counts, empty states, and reduced-motion preferences.
-- The approved persistence stack is Supabase Auth and managed Supabase PostgreSQL, with the Next.js app served from Linode at `https://curitopia.com`. Email and password include confirmation and password reset. There is no social login. The local Supabase stack is for migration tests only. The signed-in home lists saved explorations. Do not add rename or delete until that task is requested. Do not add an AI API.
-- Titles are at most 120 trimmed characters. Question text is at most 2,000 trimmed characters. Deleting an exploration is permanent after explicit confirmation. Hiding a question keeps the row: the central question and the last visible question cannot be hidden.
-- Test row-level security with pgTAP through `supabase test db`. Do not add a general-purpose frontend test framework unless a later decision approves one.
+- The approved persistence stack is Supabase Auth and managed Supabase PostgreSQL, with the Next.js app intended to be served from Linode at `https://curitopia.com`. Email and password include confirmation and password reset. There is no social login. The local Supabase stack is for migration tests only. The signed-in home lists saved explorations. Hiding a question sets `is_hidden` and keeps the row. Do not add rename, delete, or AI until that task is requested.
+- Future work stays one small, explicitly scoped task at a time. A documentation proposal is not permission to implement the next feature.
+- Titles are at most 120 trimmed characters. Question text is at most 2,000 trimmed characters. Deleting an exploration is permanent after explicit confirmation. Hiding a question keeps the row: the central question and the last visible question cannot be hidden. Hidden questions are omitted from the normal map, list, and visible counts unless the user is viewing the hidden list.
+- Test row-level security with pgTAP through `supabase test db`. Do not describe that security as fully verified until those tests, or an equivalent two-account check, have actually passed. Do not add a general-purpose frontend test framework unless a later decision approves one.
 - Never send question text, titles, emails, or other exploration content to analytics. The prototype still mounts Vercel Analytics. Do not remove or replace it until open item 8 under D-015 is decided.
 - Keep the `typecheck` script. Do not set `typescript.ignoreBuildErrors`.
 - Never commit secrets, API keys, personal data, or filled `.env` files.

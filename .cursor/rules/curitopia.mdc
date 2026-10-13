@@ -12,9 +12,9 @@ Read `AGENTS.md` and `docs/DECISIONS.md` before changing behaviour. The signed-i
 - Derive node colour from the stable question id. Do not store colour, and do not pick a new colour on each render.
 - Approved stack: Supabase Auth, managed Supabase PostgreSQL, and Linode at https://curitopia.com. Email and password, with email confirmation and password reset. No social login. Use the local Supabase stack only to test migrations.
 - A persistent exploration requires a signed-in confirmed user. Insert it when the first question is saved. Keep empty explorations out of the library.
-- Titles are at most 120 characters. Question text is at most 2,000 characters. Deletion of an exploration is permanent after explicit confirmation. A question can be hidden and restored; the central question and the last visible question cannot be hidden.
-- Enforce ownership with row-level security. Test those policies with Supabase database tests (pgTAP via `supabase test db`).
+- Titles are at most 120 characters. Question text is at most 2,000 characters. Deletion of an exploration is permanent after explicit confirmation. A question can be hidden and restored. `is_hidden` keeps the row. Hidden questions leave the normal map, list, and visible counts. The central question and the last visible question cannot be hidden.
+- Enforce ownership with row-level security. Test those policies with Supabase database tests (pgTAP via `supabase test db`). Do not describe that security as fully verified until those tests, or an equivalent two-account check, have actually passed.
 - Never send question text, titles, or other session content to analytics. Leave the existing Vercel Analytics component in place until D-015 settles that choice.
 - Keep the `typecheck` script. Do not set `typescript.ignoreBuildErrors`.
-- Do not add AI in this phase.
-- The current exploration is persisted for a signed-in user. The previous-explorations library is the signed-in home. Do not add rename or delete, and do not apply further remote database changes, until the user asks for that work.
+- AI reflection is the proposed next phase, specified in `docs/AI_BEHAVIOUR.md` and `docs/REFLECTION_SPEC.md`. Do not implement it until that task is requested.
+- The previous-explorations library is the signed-in home. Do not add rename or delete until the user asks. Database changes use a new forward-only migration through the hosted Supabase workflow. Do not recreate existing tables or edit applied migrations.

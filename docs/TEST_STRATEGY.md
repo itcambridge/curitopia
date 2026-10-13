@@ -1,14 +1,26 @@
 # Test Strategy
 
 ## Status
-Prototype checks below apply to the current application. Persistence checks apply when the approved design is implemented. This document does not add a frontend test framework.
+The checks below are the verification plan. Recorded results are listed immediately after this status. This document does not add a frontend test framework.
+
+## Recorded results
+These results come from earlier implementation reports and from the user's report of the hosted schema script. The documentation audit did not re-run them and did not connect to the hosted database.
+
+- During the hide-and-restore implementation, `npm run typecheck` passed and the production build passed. That checks TypeScript and the Next.js build. It does not exercise the database.
+- The user reported that all 16 checks in `supabase/scripts/verify_question_hidden.sql` passed after the hide SQL was applied in the hosted SQL Editor. Those checks read catalog metadata: the `is_hidden` column, its default, the central-question check, the last-visible trigger, and the continued presence of row-level security and the earlier deferred checks. They do not hide a row.
+- End-to-end hide and restore in the signed-in application, including refresh, has not been confirmed. The browser session used while implementing that screen was signed out.
+- Cross-account isolation has not been confirmed. `supabase/tests/explorations_rls.test.sql` and `supabase/tests/questions_hidden.test.sql` have not been executed with `supabase test db`. Passing catalog checks are not runtime proof that one account cannot read or change another account's rows.
+- Email confirmation and password reset have account screens and redirect routes. A local sign-in was reported after the environment was configured. An email-confirmation redirect problem on localhost was left for the production domain. Those mail flows are not recorded as fully verified.
+- Linode process supervision, TLS, DNS, and the GitHub release path are open under D-015. Do not describe the public site as deployed.
+
+Do not describe row-level security as fully verified until the pgTAP files, or an equivalent two-account runtime check, have actually passed.
 
 ## First inspect existing tooling
 `package.json` defines `dev`, `build`, `start`, and `typecheck` (`tsc --noEmit`). It does not define lint or frontend test scripts. No frontend test framework is installed, and none is approved (D-014).
 
 `typescript.ignoreBuildErrors` has been removed. `pnpm build` validates types and the `typecheck` script remains. Report both results.
 
-Row-level security tests use pgTAP, run with the Supabase CLI command `supabase test db`. Add those tests with the database implementation. Do not install Vitest, Jest, Playwright, or Testing Library for this phase.
+Row-level security tests use pgTAP, run with the Supabase CLI command `supabase test db`. The test files are already in `supabase/tests`. They have not been executed. Do not install Vitest, Jest, Playwright, or Testing Library for this phase.
 
 ## Prototype smoke tests
 - App starts with `pnpm dev` and loads without console errors.
@@ -24,7 +36,7 @@ Row-level security tests use pgTAP, run with the Supabase CLI command `supabase 
 - Selecting a question highlights it and exposes its full text.
 - Map and List both show the same questions. Timeline stays disabled.
 - Switching mode does not clear questions.
-- Start new exploration clears the in-memory questions. This prototype action is replaced in the persistence phase by creating another saved exploration.
+- Start new exploration opens another empty workspace and leaves earlier saved explorations in the library. The old prototype instead cleared the only in-memory list.
 - Layout works at narrow and wide viewport sizes.
 - Reduced-motion preference is honoured.
 
@@ -46,7 +58,7 @@ A frontend test runner is deferred. When one is approved later, cover:
 Run the database checks with `supabase test db` when the schema exists. Run the screen checks manually until a frontend framework is approved. Use two confirmed accounts. Do not use production user data.
 
 ### Database policies
-pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and `supabase/tests/questions_hidden.test.sql`. They run with `supabase test db` against the local Supabase database. They have not been executed for the hide migration. A read-only hosted check is `supabase/scripts/verify_question_hidden.sql`, to paste after `supabase/scripts/add_question_hidden.sql`. Neither script has been run against the hosted project from this repository. The tests must show:
+pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and `supabase/tests/questions_hidden.test.sql`. They are intended to run with `supabase test db` against the local Supabase database. They have not been executed. The read-only hosted catalog check is `supabase/scripts/verify_question_hidden.sql`. The user reported that its 16 checks passed. See Recorded results above. The tests must show:
 
 - User A can insert an exploration only with `user_id` equal to A.
 - User A can select, update, and delete only A's explorations.

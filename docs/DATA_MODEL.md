@@ -6,7 +6,9 @@ The relational schema below is the approved persistent contract (D-007, D-011, D
 Two stores are described on purpose. The prototype store records the earlier in-memory page. The migration is the persistent contract the workspace now uses.
 
 ## Prototype store
-`app/page.tsx` keeps one exploration in React state. There is no session record.
+Historical. The running home page is the library. The workspace no longer keeps the only copy of an exploration in React state. This section records the earlier in-memory shape so it is not mistaken for the database contract.
+
+The old page kept one exploration in React state. There was no session record.
 
 ```ts
 type QuestionRole = "central" | "satellite";
@@ -137,12 +139,12 @@ Application writes and database checks both apply.
 - At least one question in an exploration stays visible. Hiding the last visible question is rejected. The trigger locks the parent exploration so two overlapping hides cannot both succeed.
 - Hiding or restoring a question does not change `status` or `ended_at`. A completed exploration stays completed.
 - Hidden questions remain stored with their id, text, position, role, priority, and perspective origin. Restoring sets `is_hidden` back to false.
-- The normal map, list, and visible counts omit hidden questions. The interface offers a way to reveal hidden questions and restore one. That interface is not built yet.
+- The normal map, list, and visible counts omit hidden questions. The workspace list can hide an eligible question. Show hidden questions reveals those rows, with their full text, and can restore one. Restored questions return to the map and the visible counts. They are not drawn while hidden, so the orbital layout uses only visible questions.
 - Future AI analysis excludes hidden questions unless the user explicitly includes them.
 - Completing an exploration sets `status` to `completed` and `ended_at` to server time. This phase does not move a completed exploration back to `active`.
 - The first saved question and its exploration commit in one transaction. A deferred constraint rejects an exploration that commits with no questions. The library query also hides any exploration that has no questions.
 - A title chosen before the first save is included on that insert. It does not create a row by itself.
-- `updated_at` on the exploration moves forward when the exploration row changes and when a question is inserted or its priority changes. A database trigger does that, so the library order does not depend on the client remembering a parent update.
+- `updated_at` on the exploration moves forward when the exploration row changes and when a question is inserted or updated, including a priority change or a change to `is_hidden`. A database trigger does that, so the library order does not depend on the client remembering a parent update.
 - A trigger rejects a Quickfire insert that includes a perspective origin, and rejects a priority change while the exploration is still active.
 
 Last-write-wins is accepted for a single user's priority toggle or rename. Inserts rely on the primary key and the position constraint so a retry or an overlapping add does not silently duplicate a question or collapse the order.
