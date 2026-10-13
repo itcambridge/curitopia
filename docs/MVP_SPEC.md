@@ -57,7 +57,7 @@ This phase is the approved design. Once implementation is requested and built, i
 - Automated row-level security tests with Supabase pgTAP.
 
 ### Out of scope
-- AI services or AI-generated question analysis.
+- Cross-session profiling, experimentation planning, and a stored reflection. Completed-session reflection is specified in D-019.
 - Payments, subscriptions, social login, sharing, or collaboration.
 - Analytics events that include question text, titles, emails, or other exploration content.
 - Notifications.
@@ -120,7 +120,7 @@ These apply after implementation is requested and built.
 32. A starter-backed Focus question restores the perspective it was given. A freely typed question has none.
 33. Switching mode inside an in-progress exploration does not delete its questions.
 34. The orbital map is still rendered from the question data.
-35. The phase does not call an AI service or add an analysis store.
+35. Completed-session reflection may call OpenAI after confirmation. It does not add an analysis store. Quickfire and Focus do not call a model while questions are being entered.
 36. No analytics payload includes question text, titles, or other exploration content.
 37. `next.config.mjs` does not set `typescript.ignoreBuildErrors`. `pnpm typecheck` still runs `tsc --noEmit`, and `pnpm build` fails when types are invalid.
 

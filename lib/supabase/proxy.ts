@@ -61,6 +61,7 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (!signedIn && !isPublicPath(pathname)) {
+    if (pathname.startsWith('/api/')) return supabaseResponse
     return redirectWithSession(request, supabaseResponse, '/login')
   }
 

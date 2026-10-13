@@ -44,6 +44,9 @@ A signed-in confirmed user has many explorations. Each saved exploration is eith
 
 A complete exploration stays in review. Adding further questions means starting a new exploration.
 
+## Reflection
+On a completed exploration, the review offers Reflect on this exploration. The action is absent while questions are being entered. Choosing it explains that the visible questions, prioritisation, and Focus perspective origins will be sent to OpenAI. Cancel sends nothing. Confirm shows a loading state, then the suggestion: overview, themes, connections, notes on prioritised questions, and optional further questions. Further questions are labelled as suggestions the user did not write. Cited questions can be selected. A failure shows the error and Retry. The result is not saved. Hidden questions are not sent. An exploration with more than 80 visible questions explains the limit and sends nothing.
+
 ## Hiding and restoring a question
 This behaviour is available in the workspace. The hosted database already has `is_hidden`.
 

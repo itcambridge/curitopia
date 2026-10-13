@@ -1,38 +1,45 @@
 # Reflection Specification — Proposal
 
 ## Status
-Proposal for review, dated 2026-10-13. This document does not authorise implementation. Do not add a model, a reflection screen, prompt logs, or an experiments planner until a later task says so. D-017 records the same limit.
+Stage A, for one completed exploration, is implemented as described in D-019. The screen offers Reflect on this exploration only after the session is complete. The user confirms before any question text is sent to OpenAI. The result is a suggestion kept in the page, not in the database.
 
-Experimentation planning is out of scope. Reflection may name questions worth pursuing. It does not design the experiment.
+Still proposed, and not implemented: reflection while a session is still in progress, an include-hidden control, "That resonates" / "Not quite" feedback, Level 3 as a stored interest, Stage B cross-session analysis, and experimentation planning. D-017 and D-018 remain proposals for those parts. This file keeps them so the later work stays specified.
+
+The implemented response is overview, themes, connections, prioritised-question notes, and optional further questions. Further questions are labelled as suggestions the user did not write.
 
 ## When it appears
 Reflection is available only after the user finishes a session, or when they deliberately request it on a saved exploration they can already open.
 
 - Quickfire capture stays uninterrupted. The composer does not wait on a model.
-- An in-progress exploration can be reflected on only if the user asks. Asking does not complete the exploration and does not disable the composer.
+- An in-progress reflection was proposed and is not implemented. The current screen offers reflection only after the session is complete.
 - A completed exploration opens in review, as it does now. Reflection is an additional action on that review, not a replacement for the question list, the map, or priority toggles.
 - A new unsaved workspace has nothing to analyse. The action stays unavailable until the first question has been saved.
 
 ## Inputs
-The model, when one is approved, receives only the exploration the signed-in owner selected.
+Stage A sends only the exploration the signed-in owner selected. Stage B, if a later task builds it, sends only the explorations that owner has just included, after the screen shows that scope.
 
 Included by default:
 
 - Visible question text, in saved order.
 - Role: central or satellite.
 - Mode: Quickfire or Focus.
-- Perspective origin, when one was stored.
+- Perspective origin, when one was stored. The values are Investigate, Reframe, Connect, and Challenge.
 - Whether the user marked the question as prioritised.
 - The custom title, when one exists. Otherwise the same display title the library already uses.
+
+These signals are not the same kind of evidence, and none of them proves an underlying interest:
+
+- Question text shows what was explored.
+- Prioritisation shows what the user chose to mark. It is a preference, not a score. The reflection must be able to discuss an unprioritised question.
+- Perspective origin shows which optional Focus starter filled the composer. A question typed freely has no origin. An origin is not a measure of importance.
+- Feedback on an earlier reflection, once a later approved policy stores it, shows whether that interpretation resonated. Stage A does not require that store. Absence of feedback means nothing.
 
 Excluded by default:
 
 - Hidden questions. A separate control can include them for that request. The default on the next request is still to exclude them.
-- Questions belonging to any other exploration.
+- In Stage A, every other exploration. Stage B may include other explorations only after the user selects that scope.
 - Another user's rows.
 - Emails, account ids, and analytics payloads.
-
-Prioritisation is passed as the user's preference, with instructions that it is not a score. The reflection must be able to discuss an unprioritised question.
 
 The user's original text is not rewritten before it is stored, and it is not rewritten by the reflection.
 
@@ -41,6 +48,8 @@ The user's original text is not rewritten before it is stored, and it is not rew
 - Include hidden questions, off by default.
 - Dismiss the reflection and return to the map, list, and review. Dismissing does not delete questions.
 - Try again after a failure. Retry does not duplicate questions.
+
+On a proposed pattern, the user can answer "That resonates.", "Explore the connection.", or "Not quite." Disagreeing takes one action. It is not treated as proof that the interpretation was secretly correct. "Explore the connection." shows the cited questions and the proposed link again. It does not start an experiment and does not rewrite the questions.
 
 No control in this proposal edits question text, hides a question, changes priority, completes an exploration, or starts an experiment.
 
@@ -55,7 +64,35 @@ The output has five parts, each allowed to be empty when the exploration does no
 4. **Unanswered questions.** Questions that still look open. The model does not invent an answer.
 5. **Worth pursuing.** A short list of existing questions that may repay research or experimentation, with a one-line reason each. No method, materials, or experiment plan.
 
-Every cited question is one the user wrote. If the model mentions a question that is not in the input, that output is invalid and is not shown.
+Every cited question is one the user wrote. If the model mentions a question that is not in the input, that output is invalid and is not shown. A pattern with too little support is withheld. The screen says the evidence is insufficient rather than stating a weak pattern as if it were established. There is no fixed minimum number of sessions. That threshold would need testing before anyone sets it.
+
+## Recurring interests and curiosity patterns
+This is a distinct proposed capability. Its job is to help the user notice what they repeatedly explore. It does not tell them what they think or why they think it. The user decides whether an interpretation resonates.
+
+Each meaningful pattern shows a short description, the questions or sessions that support it, the connection the model sees, and language that keeps the claim tentative. It is an invitation to explore, not a finding.
+
+### Level 1 — Recurring topics
+Name a subject or concept that appears more than once in the material being analysed. A single-session example: "Several of these questions return to consciousness." A later cross-session example: "You've returned to questions about consciousness in several explorations." Show the original questions. Do not report a topic that appears only as a stretched reading of one question.
+
+### Level 2 — Connecting interests
+Suggest a possible relationship between questions that may look unrelated. Example: "Your questions about dreams, spirituality and reality may share a broader theme: how we distinguish experience from what we can know to be true." Explain the proposed connection and cite the questions that support it. Call the link possible.
+
+### Level 3 — Possible deeper interests
+Offer a tentative reading of what the user may be drawn to understanding. Example: "You may be particularly interested in how people distinguish what they believe from what they can know." Frame it as a hypothesis. Do not present it as a psychological fact, a diagnosis, a personality assessment, or a discovery about unconscious motivation.
+
+Level 3 still cites the questions it used. If those questions do not support the reading, the reading is invalid and is not shown.
+
+## Two stages
+### Stage A — Single-session reflection
+This is the first reflection capability to consider for implementation. It starts from the exploration the user is reviewing. It looks for recurring themes, possible connections, prioritised questions in context, and promising unanswered questions. The three levels above apply inside that one exploration. Questions from other explorations are not included.
+
+### Stage B — Cross-session curiosity patterns
+A later extension. The user explicitly asks to analyse selected previous explorations, or their exploration history. Before the request is sent, the screen states the scope in plain language, including how many explorations are included and that hidden questions are excluded unless the user turns that option on.
+
+Stage B does not run silently across every session. It reads only explorations the signed-in owner can already open. Row-level security remains the boundary. One user's questions are never sent or shown as part of another user's reflection. Proposed themes still cite the supporting questions. The user can reject, correct, or explore a suggested pattern. If the selected material is too thin for a reliable pattern, the screen says so.
+
+## From a pattern to a later exploration
+A possible future path is: recurring theme, then an interesting question, then a question the user prioritises, then a deliberate new exploration, then an optional investigation or experiment. This proposal stops before the experiment. The user chooses whether a pattern becomes a new exploration. Reflection does not open one on their behalf and does not write the investigation plan.
 
 ## Failure states
 - **Loading.** The existing exploration remains readable. The reflection area shows that it is working.
@@ -68,6 +105,8 @@ A failed reflection never replaces the question list with sample questions or wi
 
 ## Privacy
 Question text goes to a model only after a later decision names the provider, what is retained, and how the user consents. That consent is separate from creating an account. The request uses the signed-in user's session. It does not use a service-role key. Analytics still must not receive question text, titles, or reflection text.
+
+The analysis reads question content. It does not look for hidden psychological traits. It does not diagnose a mental-health condition, infer trauma, or state sensitive beliefs or motivations as facts. A recurring theme is not stored as a durable profile of the user unless a later task approves that data policy. Generated insights are suggestions. The user remains the authority on what their curiosity means.
 
 ## Acceptance criteria
 These apply only after an implementation task is approved.
@@ -82,10 +121,16 @@ These apply only after an implementation task is approved.
 8. Another account's exploration cannot be submitted.
 9. Reflection text is not sent to analytics.
 10. The screen does not plan an experiment.
+11. A pattern cites the questions it used, uses tentative language for a deeper interest, and is withheld when the evidence is insufficient.
+12. "Not quite." dismisses that pattern without changing the saved questions and without treating the disagreement as confirmation.
+13. Stage A does not send questions from any other exploration.
+
+Stage B is not part of the first implementation. When a later task approves it, that task also has to show the scope before the request, keep hidden questions out unless included, refuse another user's rows, and avoid storing a standing profile unless that storage is part of the approved design.
 
 ## Not in this proposal
 - Choosing a model vendor, writing prompts, or adding an API key.
-- Storing reflections.
+- Storing reflections, feedback, or a cross-session profile. Stage A does not need that store. A later task may propose one only with an explicit retention policy.
+- Implementing Stage B.
 - Rename, delete, or any database migration.
 - A timeline, clustering on the map, or new modes.
 - An experimentation specification.

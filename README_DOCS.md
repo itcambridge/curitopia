@@ -26,7 +26,7 @@
 - Questions can be hidden and restored with `is_hidden`. Hidden questions stay stored and leave the normal map, list, and visible counts. The central question and the last visible question cannot be hidden.
 - Saving reports Saving, Saved, or Could not save. A rejected hide puts the question back to the stored visible state.
 - Rename and delete are specified and not built.
-- AI reflection is the proposed next phase. It is not implemented.
+- AI reflection on one completed exploration is implemented. It sends visible questions to OpenAI only after confirmation and does not store the result. Cross-session patterns and experimentation are still proposed.
 
 The earlier in-memory prototype is history, recorded as D-005. Do not describe the running workspace as memory-only.
 
@@ -52,7 +52,7 @@ See `docs/TEST_STRATEGY.md` for the full list. In short:
 
 ## Approved architecture
 
-Documented in `docs/DECISIONS.md`, D-007 through D-016. D-017 proposes reflection and does not approve it.
+Documented in `docs/DECISIONS.md`, D-007 through D-016. D-019 approves completed-session reflection. D-017 and D-018 still propose the wider reflection behaviour and do not approve cross-session profiling or experimentation.
 
 - Application: Next.js, React, and TypeScript.
 - Intended production host: Linode at `https://curitopia.com`.
@@ -71,5 +71,4 @@ Remaining product work, in an order that keeps each step reviewable:
 
 1. Confirm ownership with runtime tests, including hide and restore, before treating security as verified.
 2. Rename and confirmed deletion, when that task is requested.
-3. AI-assisted reflection, only after `docs/REFLECTION_SPEC.md` is approved as an implementation task.
-4. Experimentation planning, only as its own later specification.
+3. Cross-session curiosity patterns and experimentation planning, only after those proposals are approved as their own tasks.

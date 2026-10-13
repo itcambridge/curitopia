@@ -4,7 +4,7 @@
 The persistence design is approved. See `docs/DECISIONS.md`. Authentication, saving an exploration, and the previous-explorations library are implemented. Rename and delete are not built.
 
 ## Product idea
-Curitopia helps people keep asking questions, move beyond their first thought, and see where their thinking leads. The next phase turns the prototype into a private, persistent application: people can sign in, keep explorations, prioritise questions, and return to them later.
+Curitopia helps people keep asking questions, move beyond their first thought, and see where their thinking leads. Accounts, saved explorations, and the library are already in the application. People can sign in, keep explorations, prioritise questions, and return to them later.
 
 ## Core principle
 **Ask more questions. Suspend judgement. Discover what comes next.**
@@ -51,7 +51,9 @@ Specified and not built: renaming an exploration within 120 characters, and perm
 Approved technical default: Supabase Auth and managed Supabase PostgreSQL, with the existing Next.js application served from Linode at `https://curitopia.com`. The local Supabase stack is for migration tests. See `docs/ARCHITECTURE.md` and `docs/DECISIONS.md`. Production hosting on Linode is the intended deployment and is not confirmed complete.
 
 ## Proposed next phase
-AI-assisted reflection after a session, described in `docs/AI_BEHAVIOUR.md` and `docs/REFLECTION_SPEC.md`. That proposal is not approval to implement it. Experiment planning is a later specification.
+Completed-session reflection is implemented. See `docs/AI_BEHAVIOUR.md` and D-019. It is optional, confirmed before any text is sent to OpenAI, and not saved.
+
+Still proposed: cross-session curiosity patterns, interpretation feedback, and experiment planning. A recurring interest may later inspire a new exploration. The user would choose whether to pursue it. That path is not built.
 
 ## Non-goals
 - A clinical or therapeutic tool, or claims of guaranteed stress relief.

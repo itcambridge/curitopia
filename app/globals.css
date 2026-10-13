@@ -72,4 +72,22 @@ button { cursor:pointer; }
 .auth-message.success { color:#76dfb5; }
 .auth-footer { display:flex; justify-content:space-between; gap:12px; margin-top:16px; font-size:14px; }
 .auth-footer a { color:#8fd0ff; }
-@media (max-width:900px) { .sign-out-error { left:20px; right:20px; bottom:46px; } .auth-footer { flex-direction:column; } .library-shell { padding:16px; } .library-intro, .library-header { flex-direction:column; align-items:stretch; } .library-start { text-align:center; } }
+.reflection { margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+.reflection-label, .reflection-confirm p, .reflection-result p { margin:0; color:#c5d7f0; font-size:13px; line-height:1.45; }
+.reflection-confirm, .reflection-result, .reflection-error { padding:12px; border:1px solid rgba(104,161,228,.28); border-radius:12px; background:rgba(4,19,40,.45); }
+.reflection-confirm p + p, .reflection-result p + p { margin-top:8px; }
+.reflection-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.reflect-button, .reflect-secondary { border-radius:12px; padding:11px 12px; font-weight:600; }
+.reflect-button { border:0; color:#fff; background:linear-gradient(100deg,#42b9ec,#8150ed); }
+.reflect-button:disabled { opacity:.55; cursor:not-allowed; }
+.reflect-secondary { border:1px solid rgba(101,153,219,.29); color:#fff; background:rgba(24,53,91,.7); }
+.reflect-button:focus-visible, .reflect-secondary:focus-visible, .reflection-question:focus-visible { outline:2px solid rgba(112,192,255,.55); outline-offset:2px; }
+.reflection-result h2, .reflection-result h3 { margin:12px 0 6px; font-size:15px; }
+.reflection-result h2 { margin-top:0; }
+.reflection-result ul { margin:0; padding-left:18px; color:#dce9ff; font-size:13px; line-height:1.45; }
+.reflection-result li { margin:8px 0; }
+.reflection-result li p { margin-top:4px; }
+.reflection-links { display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin-top:6px; }
+.reflection-question { padding:0; border:0; background:transparent; color:#8fd0ff; text-align:left; line-height:1.4; }
+.reflection-error p { color:#ffb4c8; }
+@media (max-width:900px) { .sign-out-error { left:20px; right:20px; bottom:46px; } .auth-footer { flex-direction:column; } .library-shell { padding:16px; } .library-intro, .library-header { flex-direction:column; align-items:stretch; } .library-start { text-align:center; } .reflection-actions { flex-direction:column; } .reflect-button, .reflect-secondary { width:100%; } }

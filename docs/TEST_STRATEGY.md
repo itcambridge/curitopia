@@ -6,7 +6,7 @@ The checks below are the verification plan. Recorded results are listed immediat
 ## Recorded results
 These results come from earlier implementation reports, the user's report of the hosted schema script, and a manual browser check on 2026-10-13. They were not re-run for this note, and this note did not connect to the hosted database.
 
-- During the hide-and-restore implementation, `npm run typecheck` passed and the production build passed. That checks TypeScript and the Next.js build. It does not exercise the database.
+- `npm test` passed for the reflection helpers: validation, consent state, the server decision function with mocked OpenAI and a stubbed exploration load, and a source check that the reflection control sits in the completed-session review. Those tests do not sign in, do not read the hosted database, and do not prove row-level security.
 - The user reported that all 16 checks in `supabase/scripts/verify_question_hidden.sql` passed after the hide SQL was applied in the hosted SQL Editor. Those checks read catalog metadata: the `is_hidden` column, its default, the central-question check, the last-visible trigger, and the continued presence of row-level security and the earlier deferred checks. They do not hide a row.
 - End-to-end hide and restore in the signed-in application, including refresh, has not been confirmed. The browser session used while implementing that screen was signed out.
 - Manual browser check, two accounts: each account showed a different exploration library. While signed in as Account B, opening an exploration URL that belongs to Account A showed "This exploration is not available" and did not reveal that exploration. This is a screen-level observation only.
@@ -17,11 +17,11 @@ These results come from earlier implementation reports, the user's report of the
 Do not describe row-level security as fully verified until the pgTAP files have actually passed. The manual two-account browser check above does not replace those tests.
 
 ## First inspect existing tooling
-`package.json` defines `dev`, `build`, `start`, and `typecheck` (`tsc --noEmit`). It does not define lint or frontend test scripts. No frontend test framework is installed, and none is approved (D-014).
+`package.json` defines `dev`, `build`, `start`, `typecheck` (`tsc --noEmit`), and `test`. `test` runs Node's built-in test runner against the reflection helpers. It does not install Vitest, Jest, Playwright, or Testing Library (D-014). It does not call OpenAI, and it does not log in to Supabase.
 
 `typescript.ignoreBuildErrors` has been removed. `pnpm build` validates types and the `typecheck` script remains. Report both results.
 
-Row-level security tests use pgTAP, run with the Supabase CLI command `supabase test db`. The test files are already in `supabase/tests`. They have not been executed. Do not install Vitest, Jest, Playwright, or Testing Library for this phase.
+Row-level security tests use pgTAP, run with the Supabase CLI command `supabase test db`. The test files are already in `supabase/tests`. They have not been executed. The reflection tests stub the exploration load, so a not-found result in those tests is not evidence of database isolation.
 
 ## Prototype smoke tests
 - App starts with `pnpm dev` and loads without console errors.
@@ -117,9 +117,29 @@ pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and `supabase/tes
 - A 2,001-character question is refused without a modal and without a write.
 - Quickfire does not persist a perspective origin.
 - Focus starters remain optional.
-- No request is sent to an AI service.
+- No request is sent to an AI service during question entry. Reflection is a separate confirmed request after the session is complete.
 - Sample dream questions are not inserted for a new account.
 - Analytics traffic for a session does not include question text, titles, or exploration content.
+
+### Reflection
+Automated, with OpenAI mocked and the exploration load stubbed. These do not prove account isolation or database row-level security:
+
+- An unsigned call does not load or send an exploration.
+- An incomplete exploration is refused before a model call.
+- A stubbed not-found load returns "This exploration is not available." The same response is what the route uses when a real load finds no row. The stub does not show why the row was missing.
+- Hidden questions are left out of the model input. Prioritised questions keep their stored flag and perspective origin.
+- More than 80 visible questions are refused without a model call.
+- A cited question id outside the supplied set is rejected.
+- A missing `OPENAI_API_KEY`, malformed model output, a rate limit, a timeout, and an upstream error return fixed messages.
+- Cancelling the confirmation returns to idle or the previous result and does not satisfy the send gate.
+- The reflection component is rendered only inside the completed-session review in `components/exploration-screen.tsx`. The source still contains the Quickfire mode switch, Focus starters for an open session, priority toggles, and hide/restore.
+
+Not tested in a browser:
+
+- A signed-in owner requesting reflection for their own completed exploration.
+- Another account opening that exploration URL.
+- Cancelling the confirmation in the browser, and Retry after a failure.
+- Quickfire, Focus, prioritisation, and hide/restore while the reflection panel is on screen.
 
 ## Reporting
 Report the exact commands run and whether each passed. Separate automated results from manual observations. Never claim a check was run when it was not.

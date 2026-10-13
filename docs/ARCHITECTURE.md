@@ -46,7 +46,7 @@ Approved default:
 - Require a signed-in confirmed user before any persistent exploration is written or read.
 - Enforce ownership with row-level security. The policies are in the applied SQL. pgTAP coverage exists and has not been run, so runtime isolation is still unverified. See `docs/TEST_STRATEGY.md`.
 - Keep source in GitHub. The current origin is `https://github.com/itcambridge/curitopia.git`.
-- Keep AI out until a reflection task is explicitly approved. Stored questions may later be read by that phase. This phase does not add a model SDK, an analysis table, or an AI route. The proposal is `docs/REFLECTION_SPEC.md`.
+- Completed-session reflection calls OpenAI from the server after the owner confirms. It does not store the result. Cross-session profiling and experimentation stay unapproved. See D-019.
 
 ## Production and local databases
 Production data lives only in the hosted Supabase project. The local Supabase CLI stack, including Docker Postgres on port 54322, is a place to rehearse migrations and run `supabase test db`. It is not a second production database and it does not receive real accounts.
@@ -72,7 +72,7 @@ Keep these small. Leave map layout in its current form.
 - Hide and restore for eligible questions. A rejected hide returns the row to the stored visible state.
 - A typed data-access boundary that maps database rows to the UI question model and derives colour from the question id.
 
-Still absent: rename, a delete confirmation, and AI reflection.
+Still absent: rename and a delete confirmation. Completed-session reflection is implemented and is not stored.
 
 The page may keep a local copy of the open exploration while a request is in flight. After a successful response, the server row is the source of truth. A failed request leaves the local change in place and surfaces the error described in `docs/UX_SPEC.md`.
 
@@ -86,6 +86,8 @@ Names the application reads:
 - `NEXT_PUBLIC_SUPABASE_URL` — project URL, available in the browser.
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — publishable key from the Supabase Connect dialog, available in the browser. It is safe to expose only because row-level security rejects unowned rows.
 - `SUPABASE_SERVICE_ROLE_KEY` — server-only, not required for this phase, never prefixed with `NEXT_PUBLIC`.
+- `OPENAI_API_KEY` — server-only secret for completed-session reflection. Never prefix it with `NEXT_PUBLIC_`.
+- `OPENAI_MODEL` — optional model id. When unset, the server uses `gpt-6-astra`.
 
 Store real values in the local environment used for migration tests and, when deployment is requested, on the Linode host. `.gitignore` already ignores `.env` files and allows a value-free `.env.example`. Do not commit filled env files, keys, or user data. An example file, if added during implementation, lists names only. Do not put the hosted database password or a Supabase access token in the repository.
 
@@ -127,8 +129,8 @@ The app sends confirmation and recovery links to `/auth/confirm`. That route acc
 These are unfinished product pieces, not open design choices:
 
 1. **Library actions.** The library lists, opens, continues, and reviews saved explorations. Rename and delete are not built.
-2. **Verification.** Typecheck and the production build have passed for the current application. Hosted catalog checks for hiding were reported as passing. Runtime hide-and-restore and cross-account checks have not.
+2. **Verification.** Typecheck and the production build passed after reflection was added. That does not prove the live OpenAI call, hide-and-restore, or database isolation. Hosted catalog checks for hiding were reported as passing. A manual two-account browser check is recorded in `docs/TEST_STRATEGY.md`. pgTAP has not been run.
 3. **Analytics.** The page-view component is already present. It must not receive exploration content. Whether it remains on Linode is undecided.
 
 ## Later, not this phase
-AI reflection is specified as a proposal in `docs/AI_BEHAVIOUR.md` and `docs/REFLECTION_SPEC.md`. It is not implemented, and this phase does not add a model SDK, an analysis table, or an AI route. Sharing, collaboration, and realtime presence stay out. Social login and guest persistence are excluded by D-010. Saved text, order, role, priority, perspective origin, and `is_hidden` are the inputs a later analysis phase would read. Hidden questions stay out of that analysis unless the user includes them.
+Cross-session curiosity patterns and experimentation remain proposals in `docs/REFLECTION_SPEC.md`. Sharing, collaboration, and realtime presence stay out. Social login and guest persistence are excluded by D-010.
