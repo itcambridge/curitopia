@@ -4,16 +4,17 @@
 The checks below are the verification plan. Recorded results are listed immediately after this status. This document does not add a frontend test framework.
 
 ## Recorded results
-These results come from earlier implementation reports and from the user's report of the hosted schema script. The documentation audit did not re-run them and did not connect to the hosted database.
+These results come from earlier implementation reports, the user's report of the hosted schema script, and a manual browser check on 2026-10-13. They were not re-run for this note, and this note did not connect to the hosted database.
 
 - During the hide-and-restore implementation, `npm run typecheck` passed and the production build passed. That checks TypeScript and the Next.js build. It does not exercise the database.
 - The user reported that all 16 checks in `supabase/scripts/verify_question_hidden.sql` passed after the hide SQL was applied in the hosted SQL Editor. Those checks read catalog metadata: the `is_hidden` column, its default, the central-question check, the last-visible trigger, and the continued presence of row-level security and the earlier deferred checks. They do not hide a row.
 - End-to-end hide and restore in the signed-in application, including refresh, has not been confirmed. The browser session used while implementing that screen was signed out.
-- Cross-account isolation has not been confirmed. `supabase/tests/explorations_rls.test.sql` and `supabase/tests/questions_hidden.test.sql` have not been executed with `supabase test db`. Passing catalog checks are not runtime proof that one account cannot read or change another account's rows.
+- Manual browser check, two accounts: each account showed a different exploration library. While signed in as Account B, opening an exploration URL that belongs to Account A showed "This exploration is not available" and did not reveal that exploration. This is a screen-level observation only.
+- Automated database Row Level Security tests remain outstanding. `supabase/tests/explorations_rls.test.sql` and `supabase/tests/questions_hidden.test.sql` have not been executed with `supabase test db`. The browser check does not verify database policies, direct table access, updates, deletes, or inserts. Do not treat it as proof that database-level isolation is fully verified.
 - Email confirmation and password reset have account screens and redirect routes. A local sign-in was reported after the environment was configured. An email-confirmation redirect problem on localhost was left for the production domain. Those mail flows are not recorded as fully verified.
 - Linode process supervision, TLS, DNS, and the GitHub release path are open under D-015. Do not describe the public site as deployed.
 
-Do not describe row-level security as fully verified until the pgTAP files, or an equivalent two-account runtime check, have actually passed.
+Do not describe row-level security as fully verified until the pgTAP files have actually passed. The manual two-account browser check above does not replace those tests.
 
 ## First inspect existing tooling
 `package.json` defines `dev`, `build`, `start`, and `typecheck` (`tsc --noEmit`). It does not define lint or frontend test scripts. No frontend test framework is installed, and none is approved (D-014).
@@ -88,8 +89,8 @@ pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and `supabase/tes
 - A signed-out request for an exploration URL shows the account screen, with no question text in the response body.
 
 ### Ownership
-- The library and an open exploration show only the signed-in user's saved explorations.
-- An unknown id and another user's id produce the same not-found result in the UI.
+- The library and an open exploration show only the signed-in user's saved explorations. A manual browser check confirmed that two accounts saw different libraries.
+- An unknown id and another user's id produce the same not-found result in the UI. The same manual check opened Account A's exploration URL while signed in as Account B and saw "This exploration is not available", without the exploration. Database policy tests for this case are still outstanding. See Recorded results.
 
 ### Round trip
 - The first accepted question creates the exploration and that question together. A second question appends.
