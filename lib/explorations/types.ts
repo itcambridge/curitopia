@@ -9,6 +9,7 @@ export type Question = {
   color: string
   role: QuestionRole
   isPrioritised: boolean
+  isHidden: boolean
   perspectiveOrigin?: PerspectiveOrigin
 }
 
@@ -26,7 +27,8 @@ export type LibraryExploration = {
   status: 'active' | 'completed'
   updatedAt: string
   questionCount: number
+  hiddenCount: number
   prioritisedCount: number
 }
 
-export type SaveResult = { ok: true } | { ok: false }
+export type SaveResult = { ok: true } | { ok: false; reason?: 'central' | 'last-visible'; storedHidden?: boolean }

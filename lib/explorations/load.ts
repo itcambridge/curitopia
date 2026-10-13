@@ -13,6 +13,7 @@ type QuestionRow = {
   question_text: string
   role: string
   is_prioritised: boolean
+  is_hidden: boolean
   perspective_origin: string | null
   position: number
 }
@@ -21,6 +22,7 @@ type LibraryQuestionRow = {
   question_text: string
   role: string
   is_prioritised: boolean
+  is_hidden: boolean
   position: number
 }
 
@@ -57,13 +59,14 @@ function mapQuestions(rows: QuestionRow[]): Question[] | null {
   for (const item of rows) {
     const role = questionRole(item.role)
     const origin = perspectiveOrigin(item.perspective_origin)
-    if (!role || origin === undefined || typeof item.question_text !== 'string' || typeof item.is_prioritised !== 'boolean') return null
+    if (!role || origin === undefined || typeof item.question_text !== 'string' || typeof item.is_prioritised !== 'boolean' || typeof item.is_hidden !== 'boolean') return null
     questions.push({
       id: item.id,
       text: item.question_text,
       color: colourFromQuestionId(item.id),
       role,
       isPrioritised: item.is_prioritised,
+      isHidden: item.is_hidden,
       ...(origin ? { perspectiveOrigin: origin } : {}),
     })
   }
@@ -89,7 +92,7 @@ export async function loadExploration(id: string): Promise<{ status: 'ok'; explo
 
   const { data: questionRows, error: questionError } = await supabase
     .from('questions')
-    .select('id, question_text, role, is_prioritised, perspective_origin, position')
+    .select('id, question_text, role, is_prioritised, is_hidden, perspective_origin, position')
     .eq('exploration_id', row.id)
     .order('position', { ascending: true })
 
@@ -113,7 +116,7 @@ function questionList(value: LibraryRow['questions']): LibraryQuestionRow[] | nu
   if (value === null) return []
   const rows = Array.isArray(value) ? value : [value]
   for (const row of rows) {
-    if (typeof row.question_text !== 'string' || typeof row.role !== 'string' || typeof row.is_prioritised !== 'boolean' || typeof row.position !== 'number') {
+    if (typeof row.question_text !== 'string' || typeof row.role !== 'string' || typeof row.is_prioritised !== 'boolean' || typeof row.is_hidden !== 'boolean' || typeof row.position !== 'number') {
       return null
     }
   }
@@ -124,8 +127,9 @@ function displayTitle(title: string | null, questions: LibraryQuestionRow[]) {
   const custom = title?.trim()
   if (custom) return custom
   const ordered = [...questions].sort((left, right) => left.position - right.position)
-  const central = ordered.find(question => question.role === 'central')
-  const fallback = (central ?? ordered[0])?.question_text.trim()
+  const visible = ordered.filter(question => !question.is_hidden)
+  const central = visible.find(question => question.role === 'central')
+  const fallback = (central ?? visible[0])?.question_text.trim()
   return fallback || 'Untitled exploration'
 }
 
@@ -133,7 +137,7 @@ export async function loadExplorationLibrary(): Promise<{ ok: true; items: Libra
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('explorations')
-    .select('id, title, mode, status, updated_at, questions!inner(question_text, role, is_prioritised, position)')
+    .select('id, title, mode, status, updated_at, questions!inner(question_text, role, is_prioritised, is_hidden, position)')
     .order('updated_at', { ascending: false })
     .order('id', { ascending: true })
 
@@ -147,14 +151,16 @@ export async function loadExplorationLibrary(): Promise<{ ok: true; items: Libra
       return { ok: false }
     }
     if (questions.length === 0) continue
+    const visible = questions.filter(question => !question.is_hidden)
     items.push({
       id: entry.id,
       title: displayTitle(entry.title, questions),
       mode,
       status: entry.status,
       updatedAt: entry.updated_at,
-      questionCount: questions.length,
-      prioritisedCount: questions.filter(question => question.is_prioritised).length,
+      questionCount: visible.length,
+      hiddenCount: questions.length - visible.length,
+      prioritisedCount: visible.filter(question => question.is_prioritised).length,
     })
   }
 

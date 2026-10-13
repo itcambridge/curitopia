@@ -1,7 +1,7 @@
 # MVP Specification and Acceptance Criteria
 
 ## Status
-The prototype baseline describes the original frontend. Authentication, saving an exploration, and the previous-explorations library are implemented. Rename and delete are not built yet.
+The prototype baseline describes the original frontend. Authentication, saving an exploration, and the previous-explorations library are implemented. Hiding and restoring a question is implemented. Rename and delete are not built yet.
 
 ## Prototype baseline
 The current application is a local Next.js prototype. It demonstrates Quickfire, Focus, question entry, priorities after the session ends, optional Focus perspective starters, the SVG orbital map, and accurate basic statistics. Session data lives in React state.
@@ -64,9 +64,10 @@ This phase is the approved design. Once implementation is requested and built, i
 - Additional modes, a timeline implementation, or a graph editor.
 - Mandatory categorisation.
 - Guest or unconfirmed persistence, migrating the current in-memory prototype into a user account, or merging accounts.
-- Soft delete or undo.
+- Soft-deleting or undoing deletion of an exploration. Hiding a question keeps the row and is not deletion.
 - Turning a complete exploration back into an in-progress one so more questions can be added.
 - Reordering or individually deleting questions.
+- Promoting a satellite to central, or hiding the central question.
 - A general-purpose frontend test framework.
 
 ### Persistence acceptance criteria
@@ -122,6 +123,15 @@ These apply after implementation is requested and built.
 35. The phase does not call an AI service or add an analysis store.
 36. No analytics payload includes question text, titles, or other exploration content.
 37. `next.config.mjs` does not set `typescript.ignoreBuildErrors`. `pnpm typecheck` still runs `tsc --noEmit`, and `pnpm build` fails when types are invalid.
+
+#### Question visibility
+These apply after the hide controls are requested and built. The database rules are in D-016.
+
+38. A satellite can be hidden and later restored. The row, text, order, role, priority, and perspective origin remain.
+39. Hidden questions are absent from the map, the list, and the visible counts, and can be revealed in order to restore one.
+40. The central question cannot be hidden. The interface explains that it anchors the exploration and that a different centre means a new exploration.
+41. The last visible question cannot be hidden.
+42. Hiding or restoring a question in a completed exploration leaves it completed.
 
 ## Test data
 Test the prototype and, once built, the persistence phase with:

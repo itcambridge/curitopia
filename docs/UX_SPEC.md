@@ -44,6 +44,17 @@ A signed-in confirmed user has many explorations. Each saved exploration is eith
 
 A complete exploration stays in review. Adding further questions means starting a new exploration.
 
+## Hiding and restoring a question
+This behaviour is available in the workspace. The hosted database already has `is_hidden`.
+
+A person can hide a satellite question and later restore it. Hiding keeps the row. Text, id, position, role, priority, perspective origin, and derived colour stay as they were. Hidden questions are left out of the normal map, the list, and the visible question counts. The interface provides a way to reveal hidden questions and restore one.
+
+The central question cannot be hidden. If the person wants a different centre, they start a new exploration. The refusal says: "The central question anchors this exploration. Start a new exploration to explore a different central question." The database does not promote a satellite into the central role.
+
+The last visible question cannot be hidden. Quickfire can therefore hide satellites until one remains. Focus can hide satellites while the central question stays visible.
+
+Hiding or restoring a question in a completed exploration does not reopen it. The composer stays disabled, and the exploration remains complete.
+
 Sign-out while a save has failed asks the user to confirm before discarding the unsaved change. Sign-out after a successful save, or before any question has been saved, returns to the signed-out screen and shows no exploration content.
 
 ## Previous explorations
@@ -56,7 +67,7 @@ Each item shows:
 - Display title.
 - Mode: Focus or Quickfire.
 - Status: In progress or Complete.
-- Question count.
+- Question count. Once hiding is available, this is the visible count.
 - When it was last updated.
 
 Actions on each item:

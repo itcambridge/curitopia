@@ -66,7 +66,7 @@ export default function ExplorationLibrary({
                       <span>{item.mode}</span>
                       <span className={item.status === 'completed' ? 'library-status complete' : 'library-status active'}>{statusLabel}</span>
                     </span>
-                    <span className="library-counts">{item.questionCount} {item.questionCount === 1 ? 'question' : 'questions'} · {item.prioritisedCount} prioritised</span>
+                    <span className="library-counts">{item.questionCount} {item.questionCount === 1 ? 'question' : 'questions'} · {item.prioritisedCount} prioritised{item.hiddenCount > 0 ? ` · ${item.hiddenCount} hidden` : ''}</span>
                     <time dateTime={item.updatedAt}>{activityLabel(item.updatedAt)}</time>
                     <span className="library-action">{action}</span>
                   </a>

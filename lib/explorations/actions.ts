@@ -88,6 +88,7 @@ export async function saveQuestion(input: {
     role: input.role,
     perspective_origin: input.perspectiveOrigin,
     is_prioritised: false,
+    is_hidden: false,
   })
 
   if (!error) return { ok: true }
@@ -125,4 +126,33 @@ export async function saveQuestionPriority(input: { questionId: string; isPriori
     .select('id')
   if (error || !data?.length) return { ok: false }
   return { ok: true }
+}
+
+function hideReason(error: { code?: string; message?: string; details?: string }): 'central' | 'last-visible' | undefined {
+  const text = `${error.message ?? ''} ${error.details ?? ''}`
+  if (text.includes('last visible question')) return 'last-visible'
+  if (error.code === '23514' || text.includes('questions_central_stays_visible')) return 'central'
+  return undefined
+}
+
+async function storedHidden(questionId: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('questions').select('is_hidden').eq('id', questionId).maybeSingle()
+  if (error || !data || typeof data.is_hidden !== 'boolean') return undefined
+  return data.is_hidden
+}
+
+export async function saveQuestionHidden(input: { questionId: string; isHidden: boolean }): Promise<SaveResult> {
+  if (!isUuid(input.questionId) || typeof input.isHidden !== 'boolean') return { ok: false }
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('questions')
+    .update({ is_hidden: input.isHidden })
+    .eq('id', input.questionId)
+    .select('id, is_hidden')
+  if (!error && data?.length && data[0]?.is_hidden === input.isHidden) return { ok: true }
+
+  const stored = await storedHidden(input.questionId)
+  if (stored === input.isHidden) return { ok: true }
+  return { ok: false, reason: error ? hideReason(error) : undefined, ...(typeof stored === 'boolean' ? { storedHidden: stored } : {}) }
 }

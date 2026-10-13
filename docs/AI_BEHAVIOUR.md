@@ -24,6 +24,7 @@ That work starts only after persistence is in place and after a separate product
 - Use typed, validated output schemas and graceful failure handling. A failed model call leaves the saved exploration intact.
 - Decide privacy, retention, cost, and consent before sending stored question text to an external model. Signing in and saving an exploration is not that consent.
 - Send only the exploration the user asked to analyse, for the signed-in owner.
+- Exclude hidden questions unless the user explicitly chooses to include them.
 - AI analysis must be separately approved and specified before implementation.
 
 ## Relationship to saved data

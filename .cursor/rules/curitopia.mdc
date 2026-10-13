@@ -12,7 +12,7 @@ Read `AGENTS.md` and `docs/DECISIONS.md` before changing behaviour. The signed-i
 - Derive node colour from the stable question id. Do not store colour, and do not pick a new colour on each render.
 - Approved stack: Supabase Auth, managed Supabase PostgreSQL, and Linode at https://curitopia.com. Email and password, with email confirmation and password reset. No social login. Use the local Supabase stack only to test migrations.
 - A persistent exploration requires a signed-in confirmed user. Insert it when the first question is saved. Keep empty explorations out of the library.
-- Titles are at most 120 characters. Question text is at most 2,000 characters. Deletion is permanent after explicit confirmation.
+- Titles are at most 120 characters. Question text is at most 2,000 characters. Deletion of an exploration is permanent after explicit confirmation. A question can be hidden and restored; the central question and the last visible question cannot be hidden.
 - Enforce ownership with row-level security. Test those policies with Supabase database tests (pgTAP via `supabase test db`).
 - Never send question text, titles, or other session content to analytics. Leave the existing Vercel Analytics component in place until D-015 settles that choice.
 - Keep the `typecheck` script. Do not set `typescript.ignoreBuildErrors`.

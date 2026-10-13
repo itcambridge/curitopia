@@ -46,7 +46,7 @@ A frontend test runner is deferred. When one is approved later, cover:
 Run the database checks with `supabase test db` when the schema exists. Run the screen checks manually until a frontend framework is approved. Use two confirmed accounts. Do not use production user data.
 
 ### Database policies
-pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and run with `supabase test db` against the local Supabase database. They must show:
+pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and `supabase/tests/questions_hidden.test.sql`. They run with `supabase test db` against the local Supabase database. They have not been executed for the hide migration. A read-only hosted check is `supabase/scripts/verify_question_hidden.sql`, to paste after `supabase/scripts/add_question_hidden.sql`. Neither script has been run against the hosted project from this repository. The tests must show:
 
 - User A can insert an exploration only with `user_id` equal to A.
 - User A can select, update, and delete only A's explorations.
@@ -59,6 +59,12 @@ pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and run with `sup
 - A Quickfire question with a perspective origin is rejected.
 - A priority change on an active exploration is rejected.
 - Deleting an exploration deletes its questions.
+- A new question is stored with `is_hidden` false.
+- Hiding a satellite sets `is_hidden` true and leaves the row in place. Restoring sets it false. Text, position, role, priority, and perspective origin stay.
+- Hiding a central question is rejected.
+- Hiding the last visible question is rejected, including when two such hides are attempted together.
+- Hiding or restoring a question does not change a completed exploration back to active.
+- User B cannot hide User A's question.
 
 ### Accounts
 - Register, confirm the email, and sign in.

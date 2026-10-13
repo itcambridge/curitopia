@@ -63,7 +63,7 @@ Approved entries are the design default. They do not, by themselves, change the 
 **Status:** Approved on 2026-10-11.
 **Decision:** A custom title is at most 120 characters after trimming. Question text is at most 2,000 characters after trimming. Blank text is rejected. Delete is permanent after explicit confirmation, and the database cascades to that exploration's questions.
 **Rationale:** Bounds keep storage and the interface predictable. Confirmation is the safeguard for a delete that cannot be undone.
-**Consequences:** The schema checks and the composer enforce the same limits. Soft delete and undo are out of scope.
+**Consequences:** The schema checks and the composer enforce the same limits. Exploration deletion stays permanent. Hiding an individual question without deleting it is specified in D-016.
 
 ## D-012 — Identity, colour, and when a row is created
 **Status:** Approved on 2026-10-11.
@@ -100,3 +100,9 @@ These are not decided by D-015:
 6. Applying the Supabase Auth site URL and redirect allow list in the hosted project dashboard. The application expects the values documented in `docs/ARCHITECTURE.md`. That dashboard change has not been made from this repository.
 7. Which mail transport sends confirmation and password-reset messages.
 8. Whether the existing Vercel Analytics component remains, is replaced, or is removed on Linode. D-013 still forbids sending exploration content.
+
+## D-016 — Hide and restore a question
+**Status:** Approved on 2026-10-13. The hosted database has the column, and the workspace can hide and restore questions.
+**Decision:** A question can be hidden and later restored. Hiding sets `questions.is_hidden` and does not delete the row. Text, id, position, role, priority, perspective origin, and derived colour stay. Hidden questions are omitted from the normal map, list, and visible counts. The interface must reveal hidden questions so one can be restored. A central question cannot be hidden; a different centre means a new exploration. The last visible question cannot be hidden. Hiding or restoring does not reopen a completed exploration. Future AI analysis excludes hidden questions unless the user explicitly includes them.
+**Rationale:** People need to set a question aside without losing it or changing the exploration's centre. A check and a locking trigger keep those limits even if the interface is wrong.
+**Consequences:** `supabase/migrations/20261013191000_add_question_hidden.sql` is the forward-only change. The same statements are in `supabase/scripts/add_question_hidden.sql` for the hosted SQL Editor. Existing questions default to visible. Row-level security and the deferred non-empty checks stay as they are. The friendly refusal for a central question is: "The central question anchors this exploration. Start a new exploration to explore a different central question."

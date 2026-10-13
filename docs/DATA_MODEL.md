@@ -1,7 +1,7 @@
 # Data Model
 
 ## Status
-The relational schema below is the approved persistent contract (D-007, D-011, and D-012). It is implemented in `supabase/migrations/20261011162400_create_explorations.sql` and has been applied to the hosted project. The signed-in home lists saved explorations, most recently updated first, and opens the one the user selects. Rename and delete are not built. pgTAP has not been run, so the policy tests are not evidence of runtime isolation.
+The relational schema below is the approved persistent contract (D-007, D-011, D-012, and D-016). It is implemented in `supabase/migrations/20261011162400_create_explorations.sql`, which has been applied to the hosted project, and `supabase/migrations/20261013191000_add_question_hidden.sql`, which has been applied to the hosted project. The signed-in home lists saved explorations and opens the one the user selects. The workspace can hide and restore questions. Rename and delete are not built. pgTAP has not been run, so the policy tests are not evidence of runtime isolation.
 
 Two stores are described on purpose. The prototype store records the earlier in-memory page. The migration is the persistent contract the workspace now uses.
 
@@ -80,6 +80,7 @@ One row is one question in one exploration.
 | `question_text` | `text`, not null | Full question text. The prototype calls this `text`. |
 | `role` | `text`, not null | `central` or `satellite`. |
 | `is_prioritised` | `boolean`, not null, default `false` | Priority flag. |
+| `is_hidden` | `boolean`, not null, default `false` | Hidden questions stay stored and can be restored. Existing rows receive `false`. |
 | `perspective_origin` | `text`, null | `investigate`, `reframe`, `connect`, `challenge`, or null. |
 | `created_at` | `timestamptz`, not null, default `now()` | Server insert time. Order uses `position`, because two inserts can share a timestamp. |
 
@@ -89,6 +90,7 @@ Checks and indexes:
 - Stored `question_text` is the trimmed value. Its length is from 1 to 2,000 characters (D-011). Longer input is rejected in the composer and by the database check.
 - `role` is `central` or `satellite`.
 - A partial unique index on `(exploration_id)` where `role = 'central'` allows at most one central question.
+- `questions_central_stays_visible` rejects a row whose role is `central` and whose `is_hidden` is true.
 - `perspective_origin` is null or one of the four Focus values.
 - Index `(exploration_id, position)` matches the unique key used to load the map and the list.
 
@@ -99,7 +101,7 @@ On insert, a before-insert trigger replaces any client-supplied `position` with 
 - One exploration contains many questions.
 - Deleting an exploration deletes its questions.
 - Deleting the auth user deletes that user's explorations and questions.
-- Questions are ordered by `position` ascending. This phase does not reorder or delete individual questions.
+- Questions are ordered by `position` ascending. Hiding a question does not change that position and does not delete the row. This phase does not reorder or permanently delete individual questions.
 
 ```mermaid
 erDiagram
@@ -110,11 +112,11 @@ erDiagram
 ### Values that stay derived
 These are not columns:
 
-- Question count and prioritised count.
+- Question count and prioritised count shown on the map, list, and review. Those visible counts exclude hidden questions. The library count does the same and shows a separate hidden count when one exists.
 - Orbit count and map coordinates.
 - Node colour. It is a pure function of `questions.id` and the fixed palette below. It is not a column. The same id always maps to the same colour. Seeded prototype colours are not user data and are not copied into new accounts.
 - Selected question, map or list view, composer draft, and which perspective panel is open. A draft is not a question until Add Question accepts it.
-- The library display title when `title` is null: central question text, otherwise the first question by position, otherwise "Untitled exploration".
+- The library display title when `title` is null: central question text, otherwise the first visible question by position, otherwise "Untitled exploration". A central question cannot be hidden.
 
 The visual hub used when every role is `satellite` is the first question by position. Loading a Quickfire exploration does not write `central` onto that row.
 
@@ -128,9 +130,15 @@ Take the first eight hexadecimal characters of the UUID, parse them as a base-16
 Application writes and database checks both apply.
 
 - Quickfire inserts store `perspective_origin` as null. A Focus insert may store one of the four origins or null. Changing mode later does not rewrite origins already saved.
-- New questions are inserted with `is_prioritised` false.
+- New questions are inserted with `is_prioritised` false and `is_hidden` false.
 - Priority updates are accepted when the exploration is `completed`. The review UI is the only control that sends them.
 - The first question in an empty Focus exploration is stored as `central` if the exploration has no central question. Every later question is `satellite`. Quickfire inserts are `satellite`.
+- A central question cannot be hidden. The database check rejects that update. The interface does not choose another central question; a different centre means a new exploration.
+- At least one question in an exploration stays visible. Hiding the last visible question is rejected. The trigger locks the parent exploration so two overlapping hides cannot both succeed.
+- Hiding or restoring a question does not change `status` or `ended_at`. A completed exploration stays completed.
+- Hidden questions remain stored with their id, text, position, role, priority, and perspective origin. Restoring sets `is_hidden` back to false.
+- The normal map, list, and visible counts omit hidden questions. The interface offers a way to reveal hidden questions and restore one. That interface is not built yet.
+- Future AI analysis excludes hidden questions unless the user explicitly includes them.
 - Completing an exploration sets `status` to `completed` and `ended_at` to server time. This phase does not move a completed exploration back to `active`.
 - The first saved question and its exploration commit in one transaction. A deferred constraint rejects an exploration that commits with no questions. The library query also hides any exploration that has no questions.
 - A title chosen before the first save is included on that insert. It does not create a row by itself.
@@ -190,6 +198,7 @@ create table public.questions (
   question_text text not null,
   role text not null,
   is_prioritised boolean not null default false,
+  is_hidden boolean not null default false,
   perspective_origin text,
   created_at timestamptz not null default now(),
   constraint questions_position_check check (position >= 0),
@@ -202,6 +211,9 @@ create table public.questions (
   constraint questions_origin_check check (
     perspective_origin is null
     or perspective_origin in ('investigate', 'reframe', 'connect', 'challenge')
+  ),
+  constraint questions_central_stays_visible check (
+    role <> 'central' or is_hidden = false
   )
 );
 
@@ -210,7 +222,7 @@ create unique index questions_one_central
   where role = 'central';
 ```
 
-Policies, the `updated_at` trigger, the Quickfire-origin trigger, the completed-only priority trigger, and the deferred non-empty exploration check are in the migration. pgTAP coverage is in `supabase/tests/explorations_rls.test.sql`. Run it with `supabase test db` after `supabase start`. The tests are not evidence of security until that command has been run and passed.
+Policies, the `updated_at` trigger, the Quickfire-origin trigger, the completed-only priority trigger, and the deferred non-empty exploration check are in the first migration. `is_hidden`, `questions_central_stays_visible`, and `questions_prevent_hiding_last_visible` are in `supabase/migrations/20261013191000_add_question_hidden.sql`. That second migration has not been applied to the hosted project. pgTAP coverage is in `supabase/tests/explorations_rls.test.sql` and `supabase/tests/questions_hidden.test.sql`. Run them with `supabase test db` after `supabase start`. The tests are not evidence of security until that command has been run and passed.
 
 ### Writes
 `public.create_exploration_with_first_question` inserts the exploration and its first question in one statement. It sets `user_id` from `auth.uid()` and does not accept an owner argument. Only `authenticated` may execute it. A deferred constraint rejects a transaction that commits an exploration with no questions.
@@ -220,6 +232,7 @@ Later changes are ordinary statements by the signed-in user:
 - Insert another question with `id`, `exploration_id`, `question_text`, `role`, and optional `perspective_origin`. Omit `position`.
 - Rename, change mode, or set `status` to `completed`. The completion trigger sets `ended_at` to server time. A completed exploration cannot return to `active`.
 - Update `is_prioritised` only after the exploration is completed.
+- Update `is_hidden` on a satellite. The database rejects hiding a central question and rejects hiding the last visible question. Setting `is_hidden` back to false restores the question. Neither change deletes the row or reopens a completed exploration.
 - Delete the exploration. The foreign key deletes its questions.
 
 Email confirmation is an authentication rule for the later application work. These tables recognise a signed-in `authenticated` user; they do not store a confirmation flag.
@@ -232,6 +245,7 @@ Email confirmation is an authentication rule for the later application work. The
 | Question `color` | Derived from `questions.id`; not stored |
 | Question `role` | `questions.role` |
 | Question `isPrioritised` | `questions.is_prioritised` |
+| No prototype field | `questions.is_hidden` |
 | Question `perspectiveOrigin` | `questions.perspective_origin` |
 | Array order | `questions.position` |
 | `mode` `"Focus"` / `"Quickfire"` | `explorations.mode` `focus` / `quickfire` |

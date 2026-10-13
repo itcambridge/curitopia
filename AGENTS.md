@@ -39,7 +39,7 @@ Before implementing a task, inspect the existing repository, `package.json`, rou
 - Keep layout calculations deterministic for existing questions so the map does not jump unpredictably on every render.
 - Handle long text, small screens, large question counts, empty states, and reduced-motion preferences.
 - The approved persistence stack is Supabase Auth and managed Supabase PostgreSQL, with the Next.js app served from Linode at `https://curitopia.com`. Email and password include confirmation and password reset. There is no social login. The local Supabase stack is for migration tests only. The signed-in home lists saved explorations. Do not add rename or delete until that task is requested. Do not add an AI API.
-- Titles are at most 120 trimmed characters. Question text is at most 2,000 trimmed characters. Deletion is permanent after explicit confirmation.
+- Titles are at most 120 trimmed characters. Question text is at most 2,000 trimmed characters. Deleting an exploration is permanent after explicit confirmation. Hiding a question keeps the row: the central question and the last visible question cannot be hidden.
 - Test row-level security with pgTAP through `supabase test db`. Do not add a general-purpose frontend test framework unless a later decision approves one.
 - Never send question text, titles, emails, or other exploration content to analytics. The prototype still mounts Vercel Analytics. Do not remove or replace it until open item 8 under D-015 is decided.
 - Keep the `typecheck` script. Do not set `typescript.ignoreBuildErrors`.
