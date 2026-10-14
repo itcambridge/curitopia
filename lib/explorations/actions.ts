@@ -104,18 +104,6 @@ export async function saveExplorationMode(input: { explorationId: string; mode: 
   return { ok: true }
 }
 
-export async function saveExplorationStatus(input: { explorationId: string }): Promise<SaveResult> {
-  if (!isUuid(input.explorationId)) return { ok: false }
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('explorations')
-    .update({ status: 'completed' })
-    .eq('id', input.explorationId)
-    .select('id')
-  if (error || !data?.length) return { ok: false }
-  return { ok: true }
-}
-
 export async function saveQuestionPriority(input: { questionId: string; isPrioritised: boolean }): Promise<SaveResult> {
   if (!isUuid(input.questionId) || typeof input.isPrioritised !== 'boolean') return { ok: false }
   const supabase = await createClient()

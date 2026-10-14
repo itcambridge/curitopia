@@ -1,19 +1,19 @@
 # Reflection Specification — Proposal
 
 ## Status
-Stage A, for one completed exploration, is implemented as described in D-019. The screen offers Reflect on this exploration only after the session is complete. The user confirms before any question text is sent to OpenAI. The result is a suggestion kept in the page, not in the database.
+Stage A, for one saved exploration, is implemented as described in D-019 and D-020. The screen offers Reflect on this exploration without requiring the exploration to be completed. The user confirms before any question text is sent to OpenAI. The result is a suggestion kept in the page, not in the database. If questions change afterwards, the suggestion is marked as an earlier set.
 
-Still proposed, and not implemented: reflection while a session is still in progress, an include-hidden control, "That resonates" / "Not quite" feedback, Level 3 as a stored interest, Stage B cross-session analysis, and experimentation planning. D-017 and D-018 remain proposals for those parts. This file keeps them so the later work stays specified.
+Still proposed, and not implemented: an include-hidden control, "That resonates" / "Not quite" feedback, Level 3 as a stored interest, Stage B cross-session analysis, and experimentation planning. D-017 and D-018 remain proposals for those parts. This file keeps them so the later work stays specified.
 
-The implemented response is overview, themes, connections, prioritised-question notes, and optional further questions. Further questions are labelled as suggestions the user did not write.
+The implemented response is overview, themes, connections, prioritised-question notes, and optional further questions. Further questions are labelled as suggestions the user did not write. Each one can be copied or added to the same exploration.
 
 ## When it appears
-Reflection is available only after the user finishes a session, or when they deliberately request it on a saved exploration they can already open.
+Reflection is available on a saved exploration the user can already open. It does not replace the composer.
 
 - Quickfire capture stays uninterrupted. The composer does not wait on a model.
-- An in-progress reflection was proposed and is not implemented. The current screen offers reflection only after the session is complete.
-- A completed exploration opens in review, as it does now. Reflection is an additional action on that review, not a replacement for the question list, the map, or priority toggles.
+- Review and reflection sit with the exploration while questions can still be added.
 - A new unsaved workspace has nothing to analyse. The action stays unavailable until the first question has been saved.
+- After the visible question set changes, an existing result is marked stale. It is not presented as a reflection of the current questions.
 
 ## Inputs
 Stage A sends only the exploration the signed-in owner selected. Stage B, if a later task builds it, sends only the explorations that owner has just included, after the screen shows that scope.
@@ -51,7 +51,7 @@ The user's original text is not rewritten before it is stored, and it is not rew
 
 On a proposed pattern, the user can answer "That resonates.", "Explore the connection.", or "Not quite." Disagreeing takes one action. It is not treated as proof that the interpretation was secretly correct. "Explore the connection." shows the cited questions and the proposed link again. It does not start an experiment and does not rewrite the questions.
 
-No control in this proposal edits question text, hides a question, changes priority, completes an exploration, or starts an experiment.
+No control in this proposal edits question text, hides a question, changes priority, or starts an experiment. Adding a suggested question is a separate, explicit action and creates a normal question.
 
 ## Outputs
 Each reflection is a suggestion. The screen says so in plain language. It does not present the model as having found facts about the user.
@@ -112,8 +112,8 @@ The analysis reads question content. It does not look for hidden psychological t
 These apply only after an implementation task is approved.
 
 1. Quickfire can add several questions with no reflection UI and no model request between them.
-2. End session still shows the current review. Reflection is optional there.
-3. Requesting reflection does not change question text, ids, positions, roles, origins, priority, hidden flags, or completion.
+2. Review and optional reflection are available while questions can still be added. Adding a question after a reflection marks that result as an earlier set.
+3. Requesting reflection does not change question text, ids, positions, roles, origins, priority, hidden flags, or `status`.
 4. Hidden questions are absent from the request unless Include hidden questions is on.
 5. Prioritised questions are described as the user's choices.
 6. Each theme, connection, and suggestion cites only questions from that request.

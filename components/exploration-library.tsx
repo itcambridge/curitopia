@@ -56,19 +56,16 @@ export default function ExplorationLibrary({
         ) : (
           <ul className="library-list">
             {items.map(item => {
-              const statusLabel = item.status === 'completed' ? 'Complete' : 'In progress'
-              const action = item.status === 'completed' ? 'Review' : 'Continue'
               return (
                 <li key={item.id}>
                   <a href={`/explorations/${item.id}`}>
                     <span className="library-title">{item.title}</span>
                     <span className="library-meta">
                       <span>{item.mode}</span>
-                      <span className={item.status === 'completed' ? 'library-status complete' : 'library-status active'}>{statusLabel}</span>
                     </span>
                     <span className="library-counts">{item.questionCount} {item.questionCount === 1 ? 'question' : 'questions'} · {item.prioritisedCount} prioritised{item.hiddenCount > 0 ? ` · ${item.hiddenCount} hidden` : ''}</span>
                     <time dateTime={item.updatedAt}>{activityLabel(item.updatedAt)}</time>
-                    <span className="library-action">{action}</span>
+                    <span className="library-action">Continue</span>
                   </a>
                 </li>
               )

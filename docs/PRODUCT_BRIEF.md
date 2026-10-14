@@ -14,7 +14,7 @@ The app should encourage exploration rather than evaluate whether a question is 
 ## Two modes
 
 ### Quickfire
-A low-friction, stream-of-consciousness experience. Users enter questions rapidly and in any order. They do not need to connect, label, or assess them while typing. Saving must stay in the background so capture is not interrupted. When they finish, Curitopia shows a retrospective view of the questions and a lightweight breakdown of what was captured. In the current prototype, and in the persistence phase, this breakdown is count, priority, and the question list. AI-generated themes remain a later phase.
+A low-friction, stream-of-consciousness experience. Users enter questions rapidly and in any order. They do not need to connect, label, or assess them while typing. Saving must stay in the background so capture is not interrupted. Review, priority, and an optional reflection are available on the same exploration without ending it. In the current application this review is count, priority, and the question list.
 
 ### Focus
 A deliberate exploration of a central question or theme. The theme remains visible while the user adds satellite questions. Optional Investigate, Reframe, Connect, and Challenge starters may help the user explore from another angle. Starters are optional; free entry remains available. Neither mode requires a category on every question.
@@ -30,8 +30,8 @@ A deliberate exploration of a central question or theme. The theme remains visib
 - Users can tell which mode they are in.
 - The orbital visualisation makes a growing set of questions feel tangible.
 - Question text stays readable.
-- Users can finish a session and review what they entered.
-- A signed-in user can find previous explorations, reopen a finished one for review, and continue an unfinished one.
+- Users can review what they entered and keep adding questions.
+- A signed-in user can find previous explorations, leave one, open another, and return to any of them to continue editing.
 - Questions, order, priorities, the central-question role, and Focus perspective origins survive leaving the page.
 - Saving, loading, and failure are visible. A failed save does not pretend the exploration was stored.
 
@@ -42,7 +42,7 @@ Implemented:
 2. Private explorations stored for a signed-in confirmed user. The exploration is created when its first question is saved.
 3. Saving and restoring questions, priorities, central and satellite roles, Focus perspective origins, and hidden state.
 4. A previous-explorations library that omits empty explorations and opens each exploration at its own URL.
-5. Reopening a completed exploration for review, including priority changes, without adding questions.
+5. Reopening any saved exploration, including one previously marked completed, and continuing to add, hide, restore, and prioritise questions.
 6. Continuing an unfinished saved exploration.
 7. Clear saving, loading, and error states. Question text is limited to 2,000 characters. A failed save is not reported as stored.
 
@@ -51,17 +51,16 @@ Specified and not built: renaming an exploration within 120 characters, and perm
 Approved technical default: Supabase Auth and managed Supabase PostgreSQL, with the existing Next.js application served from Linode at `https://curitopia.com`. The local Supabase stack is for migration tests. See `docs/ARCHITECTURE.md` and `docs/DECISIONS.md`. Production hosting on Linode is the intended deployment and is not confirmed complete.
 
 ## Proposed next phase
-Completed-session reflection is implemented. See `docs/AI_BEHAVIOUR.md` and D-019. It is optional, confirmed before any text is sent to OpenAI, and not saved.
+Reflection on one saved exploration is implemented. See `docs/AI_BEHAVIOUR.md` and D-019, as updated by D-020. It is optional, confirmed before any text is sent to OpenAI, and not saved. It does not require the exploration to be marked completed.
 
 Still proposed: cross-session curiosity patterns, interpretation feedback, and experiment planning. A recurring interest may later inspire a new exploration. The user would choose whether to pursue it. That path is not built.
 
 ## Non-goals
 - A clinical or therapeutic tool, or claims of guaranteed stress relief.
 - Social sharing, collaboration, public profiles, achievements, leaderboards, subscriptions, or social login.
-- AI-generated content, semantic analysis, or AI summaries in the persistence phase. Those remain a later phase described in `docs/AI_BEHAVIOUR.md`.
+- AI-generated content, semantic analysis, or AI summaries inside Quickfire or Focus capture. Reflection is a separate confirmed action, described in `docs/AI_BEHAVIOUR.md`.
 - A complex graph editor or full project-management system.
 - Mandatory categorisation of questions.
-- Reopening a completed exploration in order to add more questions. Completion stays a review state. A further burst of questions is a new exploration.
 - Anonymous or unconfirmed persistence, account merging, or moving an in-memory prototype session into an account.
 
 ## Product language

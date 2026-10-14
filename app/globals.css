@@ -32,8 +32,9 @@ button { cursor:pointer; }
 .save-status.error { color:#ffb4c8; }
 .retry-save { display:inline-flex; margin-top:8px; border:1px solid rgba(104,161,228,.3); color:#e8effb; background:rgba(4,19,40,.7); border-radius:10px; padding:6px 10px; text-decoration:none; }
 .composer-error { margin:8px 0 0; color:#ffb4c8; font-size:13px; line-height:1.4; }
-.library-link { color:#8fd0ff; font-size:13px; text-decoration:none; margin:-4px 4px 0; }
+.library-link { display:inline-flex; align-items:center; color:#8fd0ff; font-size:14px; font-weight:600; text-decoration:none; margin:0 4px 0; padding:8px 10px; border:1px solid rgba(104,161,228,.3); border-radius:10px; background:rgba(4,19,40,.45); }
 .library-link:focus-visible { outline:2px solid rgba(112,192,255,.55); outline-offset:2px; }
+.topbar .library-link { margin:0; white-space:nowrap; align-self:center; }
 .library-shell { min-height:100vh; background:#020b1d; color:#f4f7ff; padding:24px; }
 .library-header { display:flex; justify-content:space-between; align-items:center; gap:16px; max-width:760px; }
 .library-header .brand { height:auto; border:0; padding:0; }
@@ -90,4 +91,7 @@ button { cursor:pointer; }
 .reflection-links { display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin-top:6px; }
 .reflection-question { padding:0; border:0; background:transparent; color:#8fd0ff; text-align:left; line-height:1.4; }
 .reflection-error p { color:#ffb4c8; }
-@media (max-width:900px) { .sign-out-error { left:20px; right:20px; bottom:46px; } .auth-footer { flex-direction:column; } .library-shell { padding:16px; } .library-intro, .library-header { flex-direction:column; align-items:stretch; } .library-start { text-align:center; } .reflection-actions { flex-direction:column; } .reflect-button, .reflect-secondary { width:100%; } }
+.reflection-stale { margin:0; color:#e8c36a; font-size:13px; line-height:1.45; }
+.suggestion-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+.suggestion-actions .reflect-secondary { padding:7px 10px; }
+@media (max-width:900px) { .sign-out-error { left:20px; right:20px; bottom:46px; } .auth-footer { flex-direction:column; } .library-shell { padding:16px; } .library-intro, .library-header { flex-direction:column; align-items:stretch; } .library-start { text-align:center; } .reflection-actions { flex-direction:column; } .reflect-button, .reflect-secondary { width:100%; } .topbar .library-link { display:none; } }

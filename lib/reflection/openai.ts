@@ -25,21 +25,65 @@ type ReflectionClient = {
   }
 }
 
-export function openAiConfiguration(): { ok: true; apiKey: string; model: string } | { ok: false } {
+export type OpenAiConfiguration =
+  | { ok: true; apiKey: string; model: string; modelSource: 'environment' | 'default' }
+  | { ok: false }
+
+function safeToken(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  if (!/^[A-Za-z0-9._:-]{1,80}$/.test(value)) return undefined
+  if (value.toLowerCase().includes('sk-')) return undefined
+  return value
+}
+
+function safeModel(value: string | undefined): string | undefined {
+  if (!value || value.length > 80) return undefined
+  if (value.toLowerCase().includes('sk-')) return undefined
+  if (!/^[\w .:_-]+$/.test(value)) return undefined
+  return value
+}
+
+function logReflectionFailure(details: {
+  category: ReflectionFailureReason
+  stage?: string
+  status?: number
+  code?: string
+  type?: string
+  param?: string
+  modelSource?: 'environment' | 'default'
+  model?: string
+}) {
+  console.error('reflection failed', {
+    category: details.category,
+    stage: safeToken(details.stage),
+    status: typeof details.status === 'number' ? details.status : undefined,
+    code: safeToken(details.code),
+    type: safeToken(details.type),
+    param: safeToken(details.param),
+    modelSource: details.modelSource,
+    model: safeModel(details.model),
+  })
+}
+
+export function openAiConfiguration(): OpenAiConfiguration {
   const apiKey = process.env.OPENAI_API_KEY?.trim()
   if (!apiKey) return { ok: false }
-  const model = process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL
-  return { ok: true, apiKey, model }
+  const configuredModel = process.env.OPENAI_MODEL?.trim() ?? ''
+  if (!configuredModel) return { ok: true, apiKey, model: DEFAULT_OPENAI_MODEL, modelSource: 'default' }
+  return { ok: true, apiKey, model: configuredModel, modelSource: 'environment' }
 }
 
 export async function requestReflection(
   input: { mode: 'Focus' | 'Quickfire'; questions: ReflectionQuestionInput[] },
   client?: ReflectionClient,
 ): Promise<{ ok: true; reflection: ExplorationReflection } | { ok: false; reason: ReflectionFailureReason }> {
-  let activeClient = client
   const configuration = openAiConfiguration()
+  let activeClient = client
   if (!activeClient) {
-    if (!configuration.ok) return { ok: false, reason: 'configuration' }
+    if (!configuration.ok) {
+      logReflectionFailure({ category: 'configuration', stage: 'missing-key' })
+      return { ok: false, reason: 'configuration' }
+    }
     activeClient = new OpenAI({
       apiKey: configuration.apiKey,
       timeout: REFLECTION_REQUEST_TIMEOUT_MS,
@@ -47,9 +91,12 @@ export async function requestReflection(
     })
   }
 
+  const model = configuration.ok ? configuration.model : DEFAULT_OPENAI_MODEL
+  const modelSource = configuration.ok ? configuration.modelSource : 'default'
+
   try {
     const response = await activeClient.responses.create({
-      model: configuration.ok ? configuration.model : DEFAULT_OPENAI_MODEL,
+      model,
       store: false,
       max_output_tokens: 4000,
       reasoning: { effort: 'low' },
@@ -65,22 +112,64 @@ export async function requestReflection(
       },
     })
 
-    if (response.error || response.incomplete_details) return { ok: false, reason: 'invalid' }
+    if (response.error || response.incomplete_details) {
+      const errorRecord = response.error && typeof response.error === 'object' ? response.error as { code?: unknown; type?: unknown } : undefined
+      const incomplete = response.incomplete_details && typeof response.incomplete_details === 'object'
+        ? response.incomplete_details as { reason?: unknown }
+        : undefined
+      logReflectionFailure({
+        category: 'invalid',
+        stage: 'provider-output',
+        code: safeToken(errorRecord?.code),
+        type: safeToken(errorRecord?.type),
+        param: safeToken(incomplete?.reason),
+        modelSource,
+        model,
+      })
+      return { ok: false, reason: 'invalid' }
+    }
     const parsed: unknown = JSON.parse(response.output_text)
     const reflection = validateReflection(parsed, input.questions.map(question => ({
       id: question.id,
       text: question.text,
       isPrioritised: question.isPrioritised,
     })))
-    if (!reflection) return { ok: false, reason: 'invalid' }
+    if (!reflection) {
+      logReflectionFailure({ category: 'invalid', stage: 'validation', modelSource, model })
+      return { ok: false, reason: 'invalid' }
+    }
     return { ok: true, reflection }
   } catch (error) {
-    if (error instanceof SyntaxError) return { ok: false, reason: 'invalid' }
-    if (error instanceof OpenAI.APIError && error.status === 429) return { ok: false, reason: 'rate-limit' }
+    if (error instanceof SyntaxError) {
+      logReflectionFailure({ category: 'invalid', stage: 'parse', modelSource, model })
+      return { ok: false, reason: 'invalid' }
+    }
+    if (error instanceof OpenAI.APIError && error.status === 429) {
+      logReflectionFailure({ category: 'rate-limit', status: error.status, code: error.code ?? undefined, type: error.type, modelSource, model })
+      return { ok: false, reason: 'rate-limit' }
+    }
     if (error instanceof OpenAI.APIConnectionTimeoutError || (error instanceof Error && error.name === 'AbortError')) {
+      logReflectionFailure({
+        category: 'timeout',
+        stage: error instanceof OpenAI.APIConnectionTimeoutError ? 'timeout' : 'abort',
+        modelSource,
+        model,
+      })
       return { ok: false, reason: 'timeout' }
     }
+    if (error instanceof OpenAI.APIError) {
+      logReflectionFailure({
+        category: 'upstream',
+        status: error.status,
+        code: error.code ?? undefined,
+        type: error.type,
+        param: error.param ?? undefined,
+        modelSource,
+        model,
+      })
+      return { ok: false, reason: 'upstream' }
+    }
+    logReflectionFailure({ category: 'upstream', stage: 'unclassified', modelSource, model })
     return { ok: false, reason: 'upstream' }
   }
 }
-

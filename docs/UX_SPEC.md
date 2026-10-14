@@ -13,7 +13,7 @@ Preserve the v0-generated dark navy interface:
 - Large orbital question map in the main area.
 - Map and List controls. Timeline stays unavailable until a real timeline exists.
 - Selected-question panel that shows the full text of the selected question.
-- End-of-session review with a priority control on each question.
+- Review, with a priority control on each visible question, available while the exploration is still being edited.
 
 When an older saved exploration is open, statistics describe that exploration. The prototype heading "Today's exploration" should not imply that a restored exploration happened today.
 
@@ -22,30 +22,29 @@ This is what the signed-in screens do:
 
 1. Signing in opens the previous-explorations library. It lists that user's saved explorations, most recently updated first, and omits empty ones.
 2. New exploration opens an empty Focus workspace and does not insert a row. The first saved question creates the exploration.
-3. Opening an item loads that exploration. An in-progress exploration can continue. A completed exploration opens in review.
+3. Opening an item loads that exploration. Every saved exploration can be edited, including one that was previously marked completed.
 4. Switching between Focus and Quickfire keeps the current questions and saves the mode once an exploration exists.
-5. End session & explore stops entry, shows the review, allows priority toggles, and marks a saved exploration complete.
-6. Start new exploration leaves the previous saved exploration in the library and opens another empty workspace.
+5. All explorations returns to the library. It does not change the open exploration's questions or status.
+6. Start new exploration, from the library, leaves the previous saved exploration in the library and opens another empty workspace.
 7. Refreshing an open exploration loads that same exploration. Refreshing a new workspace before the first save stays empty.
 
 ## Persistence-phase session lifecycle
-A signed-in confirmed user has many explorations. Each saved exploration is either in progress or complete. An unsaved empty workspace is local only.
+A signed-in confirmed user has many explorations. Each saved exploration remains editable. An unsaved empty workspace is local only. The database may still store `status` as `active` or `completed` for older rows. That value does not lock the workspace.
 
 1. **Start.** New exploration opens the existing workspace in Focus with an empty question list and an empty composer. It does not copy the sample questions, and it does not insert a database row.
 2. **Capture.** The user adds questions. The mode switch remains available and does not delete questions. Focus starters remain optional. The composer accepts a question only when the trimmed text is from 1 to 2,000 characters.
-3. **Save.** The first accepted question creates the exploration and that question in one save. A title entered before that save is included. Later accepted questions, mode changes, completion, priority changes, and hide or restore update that exploration. The screen shows a quiet status: Saving, Saved, or Could not save. Quickfire does not show a dialog after a question. Rename is specified below and is not built.
-4. **Leave.** Closing or signing out before the first successful save leaves the library unchanged. After a successful save, the exploration remains in the library.
-5. **Finish.** End session & explore marks the exploration complete, shows the review, and enables priority toggles. The exploration stays in the library.
-6. **Review.** Opening a complete exploration restores the map, list, full text, counts, and priority controls. The composer stays disabled. Priority changes are saved.
-7. **Continue.** Opening an in-progress exploration restores questions in entry order and enables the composer. New questions append after the saved ones.
-8. **Start another.** Start new exploration opens another unsaved workspace. The previous saved exploration remains in the library.
-9. **Rename.** Specified, and not built. The user will be able to set or clear a title on a saved exploration. The trimmed title is at most 120 characters. A whitespace-only title is rejected. Clearing the title removes the custom name.
-10. **Delete.** Specified, and not built. Delete will ask for confirmation and state that deletion is permanent. Confirming removes that exploration and its questions. Cancelling leaves it unchanged.
+3. **Save.** The first accepted question creates the exploration and that question in one save. A title entered before that save is included. Later accepted questions, mode changes, priority changes, and hide or restore update that exploration. The screen shows a quiet status: Saving, Saved, or Could not save. Quickfire does not show a dialog after a question. Rename is specified below and is not built.
+4. **Leave.** All explorations returns to the library without completing, resetting, or locking the open exploration. Closing or signing out before the first successful save leaves the library unchanged. After a successful save, the exploration remains in the library.
+5. **Review.** The workspace shows the map, list, full text, counts, and priority controls while questions can still be added. Priority changes are saved.
+6. **Continue.** Opening any saved exploration restores questions in entry order and leaves the composer enabled. New questions append after the saved ones. A row previously marked completed stays editable, and opening it does not change its stored status.
+7. **Start another.** Start new exploration, from the library, opens another unsaved workspace. The previous saved exploration remains in the library.
+8. **Rename.** Specified, and not built. The user will be able to set or clear a title on a saved exploration. The trimmed title is at most 120 characters. A whitespace-only title is rejected. Clearing the title removes the custom name.
+9. **Delete.** Specified, and not built. Delete will ask for confirmation and state that deletion is permanent. Confirming removes that exploration and its questions. Cancelling leaves it unchanged.
 
-A complete exploration stays in review. Adding further questions means starting a new exploration.
+Leaving an exploration does not complete it. A row that is already `completed` stays `completed` until a later, separate decision changes that column. The workspace still accepts new questions.
 
 ## Reflection
-On a completed exploration, the review offers Reflect on this exploration. The action is absent while questions are being entered. Choosing it explains that the visible questions, prioritisation, and Focus perspective origins will be sent to OpenAI. Cancel sends nothing. Confirm shows a loading state, then the suggestion: overview, themes, connections, notes on prioritised questions, and optional further questions. Further questions are labelled as suggestions the user did not write. Cited questions can be selected. A failure shows the error and Retry. The result is not saved. Hidden questions are not sent. An exploration with more than 80 visible questions explains the limit and sends nothing.
+On a saved exploration, Review offers Reflect on this exploration. The composer stays available. Choosing reflection explains that the visible questions, prioritisation, and Focus perspective origins will be sent to OpenAI. Cancel sends nothing. Confirm shows a loading state, then the suggestion: overview, themes, connections, notes on prioritised questions, and optional further questions. Further questions are labelled as suggestions the user did not write. Each one can be copied or added to the same exploration. Cited questions can be selected. A failure shows the error and Retry. The result is not saved. If the question set changes after a reflection is shown, the result stays visible and is marked as an earlier set, so it is not mistaken for a reflection on the current questions. Hidden questions are not sent. An exploration with more than 80 visible questions explains the limit and sends nothing.
 
 ## Hiding and restoring a question
 This behaviour is available in the workspace. The hosted database already has `is_hidden`.
@@ -56,7 +55,7 @@ The central question cannot be hidden. Its Hide control is disabled, and selecti
 
 The last visible question cannot be hidden. Its Hide control is disabled. Quickfire can therefore hide satellites until one remains. Focus can hide satellites while the central question stays visible. Hide and Restore sit beside the question in the list and do not select it. If the database rejects a hide, the question stays visible and the screen says why, without discarding the exploration. Other save failures keep the existing Could not save state and retry.
 
-Hiding or restoring a question in a completed exploration does not reopen it. The composer stays disabled, and the exploration remains complete.
+Hiding or restoring a question does not change `status` or `ended_at`. The composer stays available.
 
 Sign-out while a save has failed asks the user to confirm before discarding the unsaved change. Sign-out after a successful save, or before any question has been saved, returns to the signed-out screen and shows no exploration content.
 
@@ -69,14 +68,12 @@ Each item shows:
 
 - Display title.
 - Mode: Focus or Quickfire.
-- Status: In progress or Complete.
 - Question count: visible questions only. When some questions are hidden, the row also shows that hidden count.
 - When it was last updated.
 
 Actions on each item:
 
-- **Continue** for an in-progress exploration.
-- **Review** for a complete exploration.
+- **Continue** for every saved exploration.
 - **Rename.** Specified, not built.
 - **Delete**, which would open confirmation first. Specified, not built.
 
@@ -115,8 +112,7 @@ Signed-out visitors see registration, sign-in, and password reset. They do not s
 3. Each accepted question is added to the exploration and the question count updates.
 4. The UI does not demand a parent, category, type, or relationship.
 5. User can continue adding questions in any order.
-6. User selects End session & explore.
-7. Show the collected questions in the circular map and a simple review. Review includes the question count, the prioritised count, and the question list. Priority can be toggled in this review. Do not fabricate AI-derived themes.
+6. The map and review stay available while questions are added. Review includes the question count, the prioritised count, and the question list. Priority can be toggled there. Optional reflection is separate and asks before anything is sent. Do not fabricate AI-derived themes.
 
 ### Quickfire interaction requirements
 - Enter submits when appropriate; Shift+Enter may create a newline if the input is multiline.
@@ -136,7 +132,7 @@ Signed-out visitors see registration, sign-in, and password reset. They do not s
 5. A question added from a starter records that perspective origin. A freely typed question does not.
 6. Each new question appears around the centre in the map.
 7. Selecting a question highlights it and shows its full text in the selected-question panel.
-8. User can continue adding questions at any time until the exploration is ended.
+8. User can continue adding questions at any time.
 9. Switching to Quickfire hides the perspective controls and does not attach a perspective origin to new questions. Questions already added keep the origin they had.
 
 ## Saving, loading, and errors

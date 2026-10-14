@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import type { ExplorationReflection } from '@/lib/reflection/types'
 import { REFLECTION_QUESTION_LIMIT } from '@/lib/reflection/types'
 import { maySendReflection, nextReflectionPhase } from '@/lib/reflection/consent'
+import { reflectionQuestionSignature, reflectionViewState } from '@/lib/reflection/freshness'
 import { validateReflection } from '@/lib/reflection/validate'
 import type { Question } from '@/lib/explorations/types'
 
@@ -15,22 +16,29 @@ export default function ExplorationReflection({
   visibleCount,
   saved,
   onSelect,
+  onAddQuestion,
 }: {
   explorationId: string
   questions: Question[]
   visibleCount: number
   saved: boolean
   onSelect: (questionId: string) => void
+  onAddQuestion: (text: string) => void
 }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [reflection, setReflection] = useState<ExplorationReflection | null>(null)
+  const [basis, setBasis] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [copiedText, setCopiedText] = useState<string | null>(null)
+  const [copyFailedText, setCopyFailedText] = useState<string | null>(null)
   const inFlight = useRef(false)
   const overLimit = visibleCount > REFLECTION_QUESTION_LIMIT
   const questionById = new Map(questions.map(question => [question.id, question]))
+  const view = reflectionViewState({ reflection, basis, questions })
 
   async function requestReflection() {
     if (!maySendReflection(phase, { inFlight: inFlight.current, overLimit, visibleCount, saved })) return
+    const sentSignature = reflectionQuestionSignature(questions)
     inFlight.current = true
     setPhase(current => nextReflectionPhase(current, 'send', reflection !== null))
     setError(null)
@@ -42,6 +50,7 @@ export default function ExplorationReflection({
         : 'Reflection is unavailable right now. Try again.'
       if (!response.ok) {
         setReflection(null)
+        setBasis(null)
         setError(message)
         setPhase(current => nextReflectionPhase(current, 'fail', reflection !== null))
         return
@@ -50,18 +59,32 @@ export default function ExplorationReflection({
       const validated = validateReflection(candidate, questions.filter(question => !question.isHidden))
       if (!validated) {
         setReflection(null)
+        setBasis(null)
         setError('Reflection is unavailable right now. Try again.')
         setPhase(current => nextReflectionPhase(current, 'fail', false))
         return
       }
       setReflection(validated)
+      setBasis(sentSignature)
       setPhase(current => nextReflectionPhase(current, 'succeed', true))
     } catch {
       setReflection(null)
+      setBasis(null)
       setError('Reflection is unavailable right now. Try again.')
       setPhase(current => nextReflectionPhase(current, 'fail', false))
     } finally {
       inFlight.current = false
+    }
+  }
+
+  async function copySuggestion(text: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedText(text)
+      setCopyFailedText(null)
+    } catch {
+      setCopiedText(null)
+      setCopyFailedText(text)
     }
   }
 
@@ -80,7 +103,7 @@ export default function ExplorationReflection({
       <p className="reflection-label">Suggestions, not facts. This result stays on this page and is not saved.</p>
       {overLimit ? <p className="composer-error">This exploration has {visibleCount} visible questions. Reflection can read up to {REFLECTION_QUESTION_LIMIT} at once, so nothing is sent.</p> : null}
       {visibleCount === 0 ? <p className="angle-hint">There are no visible questions to reflect on.</p> : null}
-      {!saved && visibleCount > 0 && !overLimit ? <p className="angle-hint">Reflection waits until this session has saved.</p> : null}
+      {!saved && visibleCount > 0 && !overLimit ? <p className="angle-hint">Reflection waits until this exploration has saved.</p> : null}
       {phase === 'confirm' ? (
         <div className="reflection-confirm" role="dialog" aria-labelledby="reflection-confirm-title">
           <p id="reflection-confirm-title">Send this exploration to OpenAI?</p>
@@ -96,21 +119,22 @@ export default function ExplorationReflection({
         </button>
       )}
       <div aria-live="polite" aria-busy={phase === 'loading'}>
-        {phase === 'loading' ? <p className="angle-hint">Reading the visible questions. The rest of this session stays available.</p> : null}
+        {phase === 'loading' ? <p className="angle-hint">Reading the visible questions. You can keep editing this exploration.</p> : null}
         {phase === 'error' && error ? (
           <div className="reflection-error" role="alert">
             <p>{error}</p>
             <button type="button" className="reflect-secondary" onClick={() => void requestReflection()}>Retry</button>
           </div>
         ) : null}
-        {phase === 'ready' && reflection ? (
+        {phase === 'ready' && view.reflection ? (
           <div className="reflection-result">
             <h2>Reflection</h2>
-            <p>{reflection.overview}</p>
+            {view.stale ? <p className="reflection-stale" role="status">This reflection is from an earlier set of questions. It does not describe the questions in this exploration now.</p> : null}
+            <p>{view.reflection.overview}</p>
             <h3>Themes</h3>
-            {reflection.themes.length === 0 ? <p className="angle-hint">No recurring theme was strong enough to suggest.</p> : (
+            {view.reflection.themes.length === 0 ? <p className="angle-hint">No recurring theme was strong enough to suggest.</p> : (
               <ul>
-                {reflection.themes.map(theme => (
+                {view.reflection.themes.map(theme => (
                   <li key={theme.title}>
                     <strong>{theme.title}</strong>
                     <p>{theme.explanation}</p>
@@ -120,9 +144,9 @@ export default function ExplorationReflection({
               </ul>
             )}
             <h3>Connections</h3>
-            {reflection.connections.length === 0 ? <p className="angle-hint">No connection was strong enough to suggest.</p> : (
+            {view.reflection.connections.length === 0 ? <p className="angle-hint">No connection was strong enough to suggest.</p> : (
               <ul>
-                {reflection.connections.map(item => (
+                {view.reflection.connections.map(item => (
                   <li key={`${item.support}-${item.connection}`}>
                     <strong>{item.support === 'supported' ? 'Pattern in these questions' : 'Possible connection'}</strong>
                     <p>{item.connection}</p>
@@ -133,10 +157,10 @@ export default function ExplorationReflection({
               </ul>
             )}
             <h3>Questions you prioritised</h3>
-            <p>{reflection.prioritised.summary}</p>
-            {reflection.prioritised.observations.length > 0 ? (
+            <p>{view.reflection.prioritised.summary}</p>
+            {view.reflection.prioritised.observations.length > 0 ? (
               <ul>
-                {reflection.prioritised.observations.map(item => (
+                {view.reflection.prioritised.observations.map(item => (
                   <li key={item.questionId}>
                     {questionButton(item.questionId)}
                     <p>{item.note}</p>
@@ -146,9 +170,20 @@ export default function ExplorationReflection({
             ) : null}
             <h3>Further questions to consider</h3>
             <p className="angle-hint">These questions were suggested for you. You did not write them.</p>
-            {reflection.furtherQuestions.length === 0 ? <p className="angle-hint">No further question was suggested.</p> : (
+            {view.reflection.furtherQuestions.length === 0 ? <p className="angle-hint">No further question was suggested.</p> : (
               <ul>
-                {reflection.furtherQuestions.map(item => <li key={item.text}>{item.text}</li>)}
+                {view.reflection.furtherQuestions.map(item => {
+                  const alreadyAdded = questions.some(question => question.text === item.text)
+                  return (
+                    <li key={item.text}>
+                      {item.text}
+                      <div className="suggestion-actions">
+                        <button type="button" className="reflect-secondary" onClick={() => void copySuggestion(item.text)}>{copiedText === item.text ? 'Copied' : copyFailedText === item.text ? 'Could not copy' : 'Copy'}</button>
+                        <button type="button" className="reflect-secondary" disabled={alreadyAdded} onClick={() => onAddQuestion(item.text)}>{alreadyAdded ? 'In this exploration' : 'Add to this exploration'}</button>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </div>

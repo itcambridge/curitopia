@@ -14,7 +14,7 @@ Historical. This section describes the original in-memory frontend. The running 
 - Display a central question and satellite question nodes.
 - Select a question and read its full text.
 - Question count and orbit count based on actual question data.
-- End-of-session review with priority toggles.
+- End-of-session review with priority toggles. Historical for the in-memory prototype. The running workspace keeps review available while questions can still be added.
 - Responsive layout and keyboard interaction.
 - Existing styling, refined only where required for usability.
 
@@ -26,7 +26,7 @@ Historical. This section describes the original in-memory frontend. The running 
 5. The displayed count matches the number of questions held in state.
 6. Switching modes does not delete the current exploration.
 7. Quickfire accepts questions in any order and does not require categorisation, a parent, or a perspective.
-8. Ending the session displays the questions, the collected count, the prioritised count, and priority toggles.
+8. The questions, the collected count, the prioritised count, and priority toggles are available without ending the exploration.
 9. Focus keeps its central question visually prominent while satellites are added.
 10. Every full question remains accessible when its node label is shortened.
 11. Circles do not overlap the central node or each other in common test cases. Dense layouts stay usable through the list and review.
@@ -45,7 +45,7 @@ This phase is the approved design. Once implementation is requested and built, i
 - Creating the exploration when its first question is saved.
 - Previous-explorations library that omits empty explorations.
 - Continue an in-progress saved exploration.
-- Reopen a complete exploration for review.
+- Reopen any saved exploration and continue editing it.
 - Rename an exploration, with a 120-character limit.
 - Permanent delete after explicit confirmation.
 - Question text limited to 2,000 characters.
@@ -65,7 +65,7 @@ This phase is the approved design. Once implementation is requested and built, i
 - Mandatory categorisation.
 - Guest or unconfirmed persistence, migrating the current in-memory prototype into a user account, or merging accounts.
 - Soft-deleting or undoing deletion of an exploration. Hiding a question keeps the row and is not deletion.
-- Turning a complete exploration back into an in-progress one so more questions can be added.
+- Removing the `status` column. Older rows may stay `completed`. That value no longer locks editing.
 - Reordering or individually deleting questions.
 - Promoting a satellite to central, or hiding the central question.
 - A general-purpose frontend test framework.
@@ -84,7 +84,7 @@ These apply after implementation is requested and built.
 
 #### Persistence
 8. Saved question text, order, central and satellite roles, priority flags, and Focus perspective origins survive reload and a later sign-in.
-9. Mode and completion status are restored with the exploration.
+9. Mode is restored with the exploration. A stored `completed` status does not disable editing.
 10. The first accepted question creates the exploration. Leaving before that save does not add a library item.
 11. A successful save is indicated on screen. A failed save keeps the unsaved change visible, shows an error, and offers retry.
 12. A failed load shows an error and retry. It does not show the sample questions, and it does not show an empty exploration as a successful load.
@@ -96,14 +96,12 @@ These apply after implementation is requested and built.
 16. The library and an open exploration show only explorations owned by the signed-in user, and only those with at least one question.
 17. Ownership is enforced in the database. A second user cannot read, update, or delete the first user's rows by calling the data API directly. pgTAP tests cover select, insert, update, and delete for both users.
 
-#### Reopening
-18. A complete exploration can be reopened into review: map or list, full question text, counts, and priority controls.
-19. Review of a complete exploration leaves the composer disabled, so new questions are not added.
-20. A priority change made during review is saved and is present on the next open.
-
-#### Continuation
-21. An in-progress exploration can be continued. Saved questions return in order, and further questions append after them.
-22. Ending an in-progress exploration marks it complete, keeps it in the library, and opens review.
+#### Reopening and continuation
+18. Any saved exploration can be reopened: map or list, full question text, counts, priority controls, and the composer.
+19. A previously completed exploration accepts new questions. Opening it does not change its stored status.
+20. A priority change is saved and is present on the next open. On an exploration that is still `active`, the hosted database accepts that update only after `supabase/scripts/allow_priority_during_exploration.sql` has been run.
+21. A saved exploration can be continued. Saved questions return in order, and further questions append after them.
+22. Leaving an exploration, including through All explorations, does not mark it complete, clear its questions, or lock it.
 23. Starting a new exploration leaves the previous saved exploration in the library and does not insert a row before the new exploration's first question.
 
 #### Rename and deletion
@@ -120,7 +118,7 @@ These apply after implementation is requested and built.
 32. A starter-backed Focus question restores the perspective it was given. A freely typed question has none.
 33. Switching mode inside an in-progress exploration does not delete its questions.
 34. The orbital map is still rendered from the question data.
-35. Completed-session reflection may call OpenAI after confirmation. It does not add an analysis store. Quickfire and Focus do not call a model while questions are being entered.
+35. Reflection of one saved exploration may call OpenAI after confirmation. It does not require completion, and it does not add an analysis store. Quickfire and Focus do not call a model while questions are being entered.
 36. No analytics payload includes question text, titles, or other exploration content.
 37. `next.config.mjs` does not set `typescript.ignoreBuildErrors`. `pnpm typecheck` still runs `tsc --noEmit`, and `pnpm build` fails when types are invalid.
 
@@ -131,7 +129,7 @@ These apply after the hide controls are requested and built. The database rules 
 39. Hidden questions are absent from the map, the list, and the visible counts, and can be revealed in order to restore one.
 40. The central question cannot be hidden. The interface explains that it anchors the exploration and that a different centre means a new exploration.
 41. The last visible question cannot be hidden.
-42. Hiding or restoring a question in a completed exploration leaves it completed.
+42. Hiding or restoring a question does not change `status` or `ended_at`.
 
 ## Test data
 Test the prototype and, once built, the persistence phase with:
@@ -143,5 +141,5 @@ Test the prototype and, once built, the persistence phase with:
 - At least 1, 10, 25, and 100 satellite questions.
 - A mix of short and long question text.
 - One question from each Focus starter, plus a freely typed Focus question.
-- An in-progress exploration and a complete exploration that contains both prioritised and unprioritised questions.
+- A saved exploration that was previously marked completed, and one that is still `active`, each containing both prioritised and unprioritised questions.
 - Two accounts, to confirm one cannot read the other.

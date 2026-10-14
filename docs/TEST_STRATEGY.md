@@ -6,7 +6,7 @@ The checks below are the verification plan. Recorded results are listed immediat
 ## Recorded results
 These results come from earlier implementation reports, the user's report of the hosted schema script, and a manual browser check on 2026-10-13. They were not re-run for this note, and this note did not connect to the hosted database.
 
-- `npm test` passed for the reflection helpers: validation, consent state, the server decision function with mocked OpenAI and a stubbed exploration load, and a source check that the reflection control sits in the completed-session review. Those tests do not sign in, do not read the hosted database, and do not prove row-level security.
+- `npm test` covers reflection helpers and the resumable-exploration rules: validation, consent, the server decision with mocked OpenAI and a stubbed load, reflection freshness after the question set changes, and source checks that a completed exploration stays editable and that leaving does not write a completion. Those tests do not sign in, do not read the hosted database, and do not prove row-level security.
 - The user reported that all 16 checks in `supabase/scripts/verify_question_hidden.sql` passed after the hide SQL was applied in the hosted SQL Editor. Those checks read catalog metadata: the `is_hidden` column, its default, the central-question check, the last-visible trigger, and the continued presence of row-level security and the earlier deferred checks. They do not hide a row.
 - End-to-end hide and restore in the signed-in application, including refresh, has not been confirmed. The browser session used while implementing that screen was signed out.
 - Manual browser check, two accounts: each account showed a different exploration library. While signed in as Account B, opening an exploration URL that belongs to Account A showed "This exploration is not available" and did not reveal that exploration. This is a screen-level observation only.
@@ -30,7 +30,7 @@ Row-level security tests use pgTAP, run with the Supabase CLI command `supabase 
 - Blank and whitespace-only input is rejected.
 - Input clears after a successful submission, and focus stays in the composer.
 - Counts reflect the actual question array.
-- Quickfire can be ended and reviewed, including the prioritised count.
+- Quickfire can be reviewed, including the prioritised count, without ending the exploration.
 - After the session ends, a question can be marked important and unmarked.
 - Focus central question remains visible.
 - A Focus starter fills the composer and can be edited before add. Free typing still works.
@@ -50,7 +50,7 @@ A frontend test runner is deferred. When one is approved later, cover:
 - Blank-question validation.
 - Adding a question and updating derived counts.
 - Mode switching without data loss.
-- Quickfire completion and priority toggles.
+- Quickfire entry, review, and priority toggles on an exploration that is still being edited.
 - Stable question order.
 - Deterministic layout coordinates for identical inputs.
 - Perspective origin stored for a Focus starter and omitted for free typing and for Quickfire.
@@ -76,7 +76,9 @@ pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and `supabase/tes
 - Hiding a satellite sets `is_hidden` true and leaves the row in place. Restoring sets it false. Text, position, role, priority, and perspective origin stay.
 - Hiding a central question is rejected.
 - Hiding the last visible question is rejected, including when two such hides are attempted together.
-- Hiding or restoring a question does not change a completed exploration back to active.
+- Hiding or restoring a question does not change `status` or `ended_at`.
+- A completed exploration still accepts another question, and its status stays `completed`.
+- Priority can change while an exploration is `active`, after `20261014210000_allow_priority_during_exploration.sql` is applied.
 - User B cannot hide User A's question.
 
 ### Accounts
@@ -103,9 +105,8 @@ pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and `supabase/tes
 - Starting a workspace and leaving before the first save does not add a library row.
 
 ### Lifecycle
-- Continue an in-progress exploration and append a question. The new question is last.
-- End the exploration, reopen it, and confirm the composer is disabled.
-- Toggle priority on a complete exploration, reload, and confirm the flag.
+- Open a saved exploration, including one previously marked completed, add a question, leave to the library, and open it again. The new question is last, and `status` is unchanged.
+- Toggle priority, reload, and confirm the flag. On an exploration that is still `active`, this depends on the priority SQL having been applied.
 - Start a new exploration and confirm the previous one is still listed.
 - Rename within 120 characters, reload, and confirm the title. A 121-character title is rejected. Clear the title and confirm the fallback label.
 - Delete asks for confirmation and states that deletion is permanent. Cancel keeps the row. Confirm removes that exploration and its questions only.
@@ -117,7 +118,7 @@ pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and `supabase/tes
 - A 2,001-character question is refused without a modal and without a write.
 - Quickfire does not persist a perspective origin.
 - Focus starters remain optional.
-- No request is sent to an AI service during question entry. Reflection is a separate confirmed request after the session is complete.
+- No request is sent to an AI service during question entry. Reflection is a separate confirmed request on a saved exploration.
 - Sample dream questions are not inserted for a new account.
 - Analytics traffic for a session does not include question text, titles, or exploration content.
 
@@ -125,18 +126,19 @@ pgTAP tests live in `supabase/tests/explorations_rls.test.sql` and `supabase/tes
 Automated, with OpenAI mocked and the exploration load stubbed. These do not prove account isolation or database row-level security:
 
 - An unsigned call does not load or send an exploration.
-- An incomplete exploration is refused before a model call.
+- A saved exploration can be reflected whether or not it was marked completed.
+- Adding, prioritising, or hiding a question after a reflection marks that result stale and keeps the suggestion available to copy or add.
 - A stubbed not-found load returns "This exploration is not available." The same response is what the route uses when a real load finds no row. The stub does not show why the row was missing.
 - Hidden questions are left out of the model input. Prioritised questions keep their stored flag and perspective origin.
 - More than 80 visible questions are refused without a model call.
 - A cited question id outside the supplied set is rejected.
 - A missing `OPENAI_API_KEY`, malformed model output, a rate limit, a timeout, and an upstream error return fixed messages.
 - Cancelling the confirmation returns to idle or the previous result and does not satisfy the send gate.
-- The reflection component is rendered only inside the completed-session review in `components/exploration-screen.tsx`. The source still contains the Quickfire mode switch, Focus starters for an open session, priority toggles, and hide/restore.
+- The reflection component is rendered in the workspace review in `components/exploration-screen.tsx`, including while questions can still be added. The source still contains the Quickfire mode switch, Focus starters, priority toggles, hide/restore, and an All explorations link. It does not call `saveExplorationStatus`.
 
 Not tested in a browser:
 
-- A signed-in owner requesting reflection for their own completed exploration.
+- A signed-in owner requesting reflection for their own saved exploration, then adding a question and seeing the earlier result marked stale.
 - Another account opening that exploration URL.
 - Cancelling the confirmation in the browser, and Retry after a failure.
 - Quickfire, Focus, prioritisation, and hide/restore while the reflection panel is on screen.

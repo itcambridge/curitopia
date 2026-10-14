@@ -16,5 +16,5 @@ Read `AGENTS.md` and `docs/DECISIONS.md` before changing behaviour. The signed-i
 - Enforce ownership with row-level security. Test those policies with Supabase database tests (pgTAP via `supabase test db`). Do not describe that security as fully verified until those tests, or an equivalent two-account check, have actually passed.
 - Never send question text, titles, or other session content to analytics. Leave the existing Vercel Analytics component in place until D-015 settles that choice.
 - Keep the `typecheck` script. Do not set `typescript.ignoreBuildErrors`.
-- Completed-session reflection is implemented. The owner confirms before any question text is sent to OpenAI, and the result is not stored. Do not add cross-session profiling or experimentation until that task is requested.
+- Reflection of one saved exploration is implemented. It does not require completion. The owner confirms before any question text is sent to OpenAI, and the result is not stored. Do not add cross-session profiling or experimentation until that task is requested.
 - The previous-explorations library is the signed-in home. Do not add rename or delete until the user asks. Database changes use a new forward-only migration through the hosted Supabase workflow. Do not recreate existing tables or edit applied migrations.

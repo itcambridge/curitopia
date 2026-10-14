@@ -432,15 +432,13 @@ select throws_ok(
   'an exploration cannot have two central questions'
 );
 
-select throws_ok(
+select lives_ok(
   $$
     update public.questions
     set is_prioritised = true
     where id = '20000000-0000-4000-8000-000000000001'::uuid
   $$,
-  '23514',
-  null::text,
-  'priority cannot change while the exploration is active'
+  'priority can change while the exploration is active'
 );
 
 select lives_ok(
@@ -466,6 +464,29 @@ select lives_ok(
     where id = '20000000-0000-4000-8000-000000000001'::uuid
   $$,
   'owner can prioritise a question after completion'
+);
+
+select lives_ok(
+  $$
+    insert into public.questions (id, exploration_id, question_text, role)
+    values (
+      '20000000-0000-4000-8000-000000000056'::uuid,
+      '10000000-0000-4000-8000-000000000001'::uuid,
+      'A question added after completion',
+      'satellite'
+    )
+  $$,
+  'a completed exploration still accepts a question'
+);
+
+select is(
+  (
+    select status = 'completed' and ended_at is not null
+    from public.explorations
+    where id = '10000000-0000-4000-8000-000000000001'::uuid
+  ),
+  true,
+  'adding a question does not change a completed exploration status'
 );
 
 select lives_ok(

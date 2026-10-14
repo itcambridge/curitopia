@@ -1,7 +1,7 @@
 # Data Model
 
 ## Status
-The relational schema below is the approved persistent contract (D-007, D-011, D-012, and D-016). It is implemented in `supabase/migrations/20261011162400_create_explorations.sql`, which has been applied to the hosted project, and `supabase/migrations/20261013191000_add_question_hidden.sql`, which has been applied to the hosted project. The signed-in home lists saved explorations and opens the one the user selects. The workspace can hide and restore questions. Rename and delete are not built. pgTAP has not been run, so the policy tests are not evidence of runtime isolation.
+The relational schema below is the approved persistent contract (D-007, D-011, D-012, D-016, and D-020). It is implemented in `supabase/migrations/20261011162400_create_explorations.sql` and `supabase/migrations/20261013191000_add_question_hidden.sql`, both applied to the hosted project. `supabase/migrations/20261014210000_allow_priority_during_exploration.sql` is written and has not been applied. The signed-in home lists saved explorations and opens the one the user selects. Every saved exploration stays editable. Rename and delete are not built. pgTAP has not been run, so the policy tests are not evidence of runtime isolation.
 
 Two stores are described on purpose. The prototype store records the earlier in-memory page. The migration is the persistent contract the workspace now uses.
 
@@ -32,7 +32,7 @@ Observed rules:
 - New ids are `Date.now()` numbers. Colour is chosen from a fixed palette at insert time, except the seeded rows, which carry their own colours.
 - The first question added to an empty Focus exploration becomes `central`. Later questions, and all new Quickfire questions, are `satellite`.
 - `perspectiveOrigin` is set only when a Focus starter fills the composer and that question is added. Quickfire questions omit it. Switching mode does not strip origins already stored.
-- `isPrioritised` defaults to `false`. The review toggles it only after the session has ended. Priority does not change text, order, role, or colour.
+- `isPrioritised` defaults to `false`. In that prototype, the review toggled it only after the session had ended. Priority does not change text, order, role, or colour. The running workspace no longer waits for an ended session.
 - Order is the array order. There is no `createdAt`.
 - Ending the session sets `ended`. Start new exploration clears the array. Completion in the prototype is not stored anywhere else.
 - Counts are derived from the array. Orbits are derived from layout.
@@ -133,19 +133,19 @@ Application writes and database checks both apply.
 
 - Quickfire inserts store `perspective_origin` as null. A Focus insert may store one of the four origins or null. Changing mode later does not rewrite origins already saved.
 - New questions are inserted with `is_prioritised` false and `is_hidden` false.
-- Priority updates are accepted when the exploration is `completed`. The review UI is the only control that sends them.
+- Priority updates are accepted for both `active` and `completed` explorations after `20261014210000_allow_priority_during_exploration.sql` is applied. Until then, the hosted database still rejects a priority change while `status` is `active`. The review control sends the update either way. New questions are still inserted with `is_prioritised` false.
 - The first question in an empty Focus exploration is stored as `central` if the exploration has no central question. Every later question is `satellite`. Quickfire inserts are `satellite`.
 - A central question cannot be hidden. The database check rejects that update. The interface does not choose another central question; a different centre means a new exploration.
 - At least one question in an exploration stays visible. Hiding the last visible question is rejected. The trigger locks the parent exploration so two overlapping hides cannot both succeed.
-- Hiding or restoring a question does not change `status` or `ended_at`. A completed exploration stays completed.
+- Hiding or restoring a question does not change `status` or `ended_at`. A completed exploration stays completed, and it remains editable.
 - Hidden questions remain stored with their id, text, position, role, priority, and perspective origin. Restoring sets `is_hidden` back to false.
 - The normal map, list, and visible counts omit hidden questions. The workspace list can hide an eligible question. Show hidden questions reveals those rows, with their full text, and can restore one. Restored questions return to the map and the visible counts. They are not drawn while hidden, so the orbital layout uses only visible questions.
 - Future AI analysis excludes hidden questions unless the user explicitly includes them.
-- Completing an exploration sets `status` to `completed` and `ended_at` to server time. This phase does not move a completed exploration back to `active`.
+- The workspace does not set `status` to `completed`. Older completed rows keep `ended_at`. This change does not move a completed exploration back to `active`. The `status` column stays.
 - The first saved question and its exploration commit in one transaction. A deferred constraint rejects an exploration that commits with no questions. The library query also hides any exploration that has no questions.
 - A title chosen before the first save is included on that insert. It does not create a row by itself.
 - `updated_at` on the exploration moves forward when the exploration row changes and when a question is inserted or updated, including a priority change or a change to `is_hidden`. A database trigger does that, so the library order does not depend on the client remembering a parent update.
-- A trigger rejects a Quickfire insert that includes a perspective origin, and rejects a priority change while the exploration is still active.
+- A trigger rejects a Quickfire insert that includes a perspective origin. Priority no longer depends on `status` once the new function is applied. The original function, still present on the hosted project until that script is run, rejects a priority change while the exploration is `active`.
 
 Last-write-wins is accepted for a single user's priority toggle or rename. Inserts rely on the primary key and the position constraint so a retry or an overlapping add does not silently duplicate a question or collapse the order.
 
@@ -224,17 +224,17 @@ create unique index questions_one_central
   where role = 'central';
 ```
 
-Policies, the `updated_at` trigger, the Quickfire-origin trigger, the completed-only priority trigger, and the deferred non-empty exploration check are in the first migration. `is_hidden`, `questions_central_stays_visible`, and `questions_prevent_hiding_last_visible` are in `supabase/migrations/20261013191000_add_question_hidden.sql`. That second migration has not been applied to the hosted project. pgTAP coverage is in `supabase/tests/explorations_rls.test.sql` and `supabase/tests/questions_hidden.test.sql`. Run them with `supabase test db` after `supabase start`. The tests are not evidence of security until that command has been run and passed.
+Policies, the `updated_at` trigger, the Quickfire-origin trigger, the original priority trigger, and the deferred non-empty exploration check are in the first migration. `is_hidden`, `questions_central_stays_visible`, and `questions_prevent_hiding_last_visible` are in `supabase/migrations/20261013191000_add_question_hidden.sql`, which has been applied to the hosted project. `supabase/migrations/20261014210000_allow_priority_during_exploration.sql` replaces `validate_question_rules` so priority can change while `status` is `active`. That file has not been applied. The SQL Editor copy is `supabase/scripts/allow_priority_during_exploration.sql`. pgTAP coverage is in `supabase/tests/explorations_rls.test.sql` and `supabase/tests/questions_hidden.test.sql`. Run them with `supabase test db` after `supabase start`. The tests are not evidence of security until that command has been run and passed.
 
 ### Writes
 `public.create_exploration_with_first_question` inserts the exploration and its first question in one statement. It sets `user_id` from `auth.uid()` and does not accept an owner argument. Only `authenticated` may execute it. A deferred constraint rejects a transaction that commits an exploration with no questions.
 
 Later changes are ordinary statements by the signed-in user:
 
-- Insert another question with `id`, `exploration_id`, `question_text`, `role`, and optional `perspective_origin`. Omit `position`.
-- Rename, change mode, or set `status` to `completed`. The completion trigger sets `ended_at` to server time. A completed exploration cannot return to `active`.
-- Update `is_prioritised` only after the exploration is completed.
-- Update `is_hidden` on a satellite. The database rejects hiding a central question and rejects hiding the last visible question. Setting `is_hidden` back to false restores the question. Neither change deletes the row or reopens a completed exploration.
+- Insert another question with `id`, `exploration_id`, `question_text`, `role`, and optional `perspective_origin`. Omit `position`. This is allowed when the exploration is `active` or `completed`.
+- Rename or change mode. The application no longer sets `status` to `completed`. The database still sets `ended_at` if something sets that status, and a completed exploration cannot return to `active`. The column stays.
+- Update `is_prioritised`. After the new function is applied, this does not depend on `status`. Until then, the hosted database allows it only when `status` is `completed`.
+- Update `is_hidden` on a satellite. The database rejects hiding a central question and rejects hiding the last visible question. Setting `is_hidden` back to false restores the question. Neither change deletes the row or changes `status`.
 - Delete the exploration. The foreign key deletes its questions.
 
 Email confirmation is an authentication rule for the later application work. These tables recognise a signed-in `authenticated` user; they do not store a confirmation flag.
@@ -251,6 +251,6 @@ Email confirmation is an authentication rule for the later application work. The
 | Question `perspectiveOrigin` | `questions.perspective_origin` |
 | Array order | `questions.position` |
 | `mode` `"Focus"` / `"Quickfire"` | `explorations.mode` `focus` / `quickfire` |
-| `ended` boolean | `explorations.status` and `ended_at` |
+| `ended` boolean | Historical prototype flag. The database still has `explorations.status` and `ended_at`. The workspace does not use them to lock editing. |
 | No title | `explorations.title` |
 | No owner | `explorations.user_id` |

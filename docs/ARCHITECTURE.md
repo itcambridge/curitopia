@@ -72,11 +72,11 @@ Keep these small. Leave map layout in its current form.
 - Hide and restore for eligible questions. A rejected hide returns the row to the stored visible state.
 - A typed data-access boundary that maps database rows to the UI question model and derives colour from the question id.
 
-Still absent: rename and a delete confirmation. Completed-session reflection is implemented and is not stored.
+Still absent: rename and a delete confirmation. Reflection of one saved exploration is implemented and is not stored. It does not require the exploration to be marked completed.
 
 The page may keep a local copy of the open exploration while a request is in flight. After a successful response, the server row is the source of truth. A failed request leaves the local change in place and surfaces the error described in `docs/UX_SPEC.md`.
 
-The first accepted question calls `public.create_exploration_with_first_question`, which inserts the exploration and that question in one statement. The owner is `auth.uid()`. Until that statement commits, there is no library row. Later writes are per change: insert one question, update mode or completion, update one priority flag, or update `is_hidden`. Rename and delete are specified and not built. Sending the entire question list on every keystroke is not the write model. See `docs/DATA_MODEL.md`.
+The first accepted question calls `public.create_exploration_with_first_question`, which inserts the exploration and that question in one statement. The owner is `auth.uid()`. Until that statement commits, there is no library row. Later writes are per change: insert one question, update mode, update one priority flag, or update `is_hidden`. The workspace does not set `status` to `completed`. Rename and delete are specified and not built. Sending the entire question list on every keystroke is not the write model. See `docs/DATA_MODEL.md`.
 
 Question ids are created in the client before the insert so a retry of the same question does not create a second row. Positions are allocated with the insert so two overlapping adds cannot claim the same order. Colour uses the id, not the position. See `docs/DATA_MODEL.md`.
 
@@ -86,13 +86,13 @@ Names the application reads:
 - `NEXT_PUBLIC_SUPABASE_URL` — project URL, available in the browser.
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — publishable key from the Supabase Connect dialog, available in the browser. It is safe to expose only because row-level security rejects unowned rows.
 - `SUPABASE_SERVICE_ROLE_KEY` — server-only, not required for this phase, never prefixed with `NEXT_PUBLIC`.
-- `OPENAI_API_KEY` — server-only secret for completed-session reflection. Never prefix it with `NEXT_PUBLIC_`.
+- `OPENAI_API_KEY` — server-only secret for reflection of one saved exploration. Never prefix it with `NEXT_PUBLIC_`.
 - `OPENAI_MODEL` — optional model id. When unset, the server uses `gpt-6-astra`.
 
 Store real values in the local environment used for migration tests and, when deployment is requested, on the Linode host. `.gitignore` already ignores `.env` files and allows a value-free `.env.example`. Do not commit filled env files, keys, or user data. An example file, if added during implementation, lists names only. Do not put the hosted database password or a Supabase access token in the repository.
 
 ### Migrations and security
-- Keep SQL migrations in `supabase/migrations`. The applied files are `20261011162400_create_explorations.sql` and `20261013191000_add_question_hidden.sql`. Do not edit them. The next schema change is a new file, applied only when requested.
+- Keep SQL migrations in `supabase/migrations`. The applied files are `20261011162400_create_explorations.sql` and `20261013191000_add_question_hidden.sql`. Do not edit them. `20261014210000_allow_priority_during_exploration.sql` is the next forward-only change. It has not been applied to the hosted project. The same statements are in `supabase/scripts/allow_priority_during_exploration.sql` for the SQL Editor. Do not apply that script automatically.
 - Enable row-level security on application tables before any user data is written. The migration does this.
 - Policies restrict rows to `auth.uid()`.
 - The anonymous role has no policies on exploration or question tables.

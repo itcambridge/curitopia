@@ -1,17 +1,16 @@
 'use client'
 
 import { FormEvent, KeyboardEvent, MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { ArrowRight, ChevronDown, Eye, EyeOff, Focus, Layers3, List, Map, MoreHorizontal, RotateCcw, Sparkles, Star, Timer, Waypoints } from 'lucide-react'
+import { ArrowRight, ChevronDown, Eye, EyeOff, Focus, List, Map, MoreHorizontal, Sparkles, Star, Timer, Waypoints } from 'lucide-react'
 import { signOut } from '@/lib/auth/actions'
 import {
   createExplorationWithFirstQuestion,
   saveExplorationMode,
-  saveExplorationStatus,
   saveQuestion,
   saveQuestionHidden,
   saveQuestionPriority,
 } from '@/lib/explorations/actions'
+import { acceptsFurtherQuestions, workspaceLeaveEffect, type StoredExplorationStatus } from '@/lib/explorations/continuation'
 import ExplorationReflection from '@/components/exploration-reflection'
 import { colourFromQuestionId } from '@/lib/explorations/colour'
 import type { DatabaseMode, ExplorationMode, OpenExploration, PerspectiveOrigin, Question, QuestionRole, SaveResult } from '@/lib/explorations/types'
@@ -46,7 +45,6 @@ type SaveOp =
   | { kind: 'create'; explorationId: string; questionId: string; mode: DatabaseMode; questionText: string; role: QuestionRole; perspectiveOrigin: PerspectiveOrigin | null }
   | { kind: 'question'; explorationId: string; questionId: string; questionText: string; role: QuestionRole; perspectiveOrigin: PerspectiveOrigin | null }
   | { kind: 'mode'; explorationId: string; mode: DatabaseMode }
-  | { kind: 'complete'; explorationId: string }
   | { kind: 'priority'; questionId: string; isPrioritised: boolean }
   | { kind: 'hidden'; questionId: string; isHidden: boolean }
 type QueuedSave = { generation: number; op: SaveOp }
@@ -171,8 +169,6 @@ async function dispatchSave(op: SaveOp): Promise<SaveResult> {
       return saveQuestion(op)
     case 'mode':
       return saveExplorationMode({ explorationId: op.explorationId, mode: op.mode })
-    case 'complete':
-      return saveExplorationStatus({ explorationId: op.explorationId })
     case 'priority':
       return saveQuestionPriority({ questionId: op.questionId, isPrioritised: op.isPrioritised })
     case 'hidden':
@@ -195,14 +191,12 @@ export default function ExplorationScreen({
   const [questions, setQuestions] = useState<Question[]>(initialExploration?.questions ?? [])
   const [input, setInput] = useState('')
   const [selected, setSelected] = useState(initialSelected)
-  const [ended, setEnded] = useState(initialExploration?.ended ?? false)
   const [view, setView] = useState<'map' | 'list'>('map')
   const [perspective, setPerspective] = useState<PerspectiveId | null>(null)
   const [composerError, setComposerError] = useState<string | null>(null)
   const [hideNotice, setHideNotice] = useState<string | null>(null)
   const [showHidden, setShowHidden] = useState(false)
   const [saveState, setSaveState] = useState<SaveState>(initialExploration ? 'saved' : 'idle')
-  const router = useRouter()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const activePerspective = perspectives.find(item => item.id === perspective)
   const addingRef = useRef(false)
@@ -219,6 +213,7 @@ export default function ExplorationScreen({
   const prioritisedCount = visibleQuestions.filter(question => question.isPrioritised).length
   const selectedQuestion = visibleQuestions.find(question => question.id === selected) ?? visibleQuestions[0]
   const saveLabel = saveState === 'saving' ? 'Saving' : saveState === 'saved' ? 'Saved' : saveState === 'error' ? 'Could not save' : 'Add a question to save this exploration.'
+  const storedStatus: StoredExplorationStatus | null = initialExploration ? (initialExploration.ended ? 'completed' : 'active') : null
 
   useEffect(() => {
     if (!input) addingRef.current = false
@@ -279,25 +274,20 @@ export default function ExplorationScreen({
     void flush()
   }
 
-  function confirmDiscard() {
-    if (saveState !== 'error') return true
-    return window.confirm('A save did not finish. Start a new exploration and discard that change?')
-  }
-
-  function addQuestion(event?: FormEvent) {
-    event?.preventDefault()
-    if (ended || addingRef.current) return
-    const text = input.trim()
+  function commitQuestion(raw: string, source: 'composer' | 'suggestion') {
+    if (!acceptsFurtherQuestions(storedStatus)) return
+    if (source === 'composer' && addingRef.current) return
+    const text = raw.trim()
     if (!text) return
     if (text.length > 2000) {
       setComposerError('A question can be at most 2,000 characters.')
       return
     }
     setComposerError(null)
-    addingRef.current = true
+    if (source === 'composer') addingRef.current = true
     const questionId = crypto.randomUUID()
-    const perspectiveOrigin = mode === 'Focus' ? pendingOriginRef.current : null
-    pendingOriginRef.current = null
+    const perspectiveOrigin = source === 'composer' && mode === 'Focus' ? pendingOriginRef.current : null
+    if (source === 'composer') pendingOriginRef.current = null
     const role: QuestionRole = mode === 'Focus' && !questions.some(question => question.role === 'central') ? 'central' : 'satellite'
     const question: Question = {
       id: questionId,
@@ -310,7 +300,7 @@ export default function ExplorationScreen({
     }
     setQuestions(prev => [...prev, question])
     setSelected(questionId)
-    setInput('')
+    if (source === 'composer') setInput('')
 
     let explorationId = explorationIdRef.current
     if (!explorationId) {
@@ -335,7 +325,12 @@ export default function ExplorationScreen({
         perspectiveOrigin,
       })
     }
-    requestAnimationFrame(() => inputRef.current?.focus())
+    if (source === 'composer') requestAnimationFrame(() => inputRef.current?.focus())
+  }
+
+  function addQuestion(event?: FormEvent) {
+    event?.preventDefault()
+    commitQuestion(input, 'composer')
   }
 
   function onComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -354,44 +349,8 @@ export default function ExplorationScreen({
     enqueue({ kind: 'mode', explorationId, mode: databaseMode(next) })
   }
 
-  function resetWorkspace() {
-    explorationIdRef.current = null
-    setQuestions([])
-    setSelected('')
-    setEnded(false)
-    setMode('Focus')
-    setInput('')
-    setView('map')
-    setPerspective(null)
-    setComposerError(null)
-    setHideNotice(null)
-    setShowHidden(false)
-    setSaveState('idle')
-    pendingOriginRef.current = null
-    requestAnimationFrame(() => inputRef.current?.focus())
-  }
-
-  function handleSessionButton() {
-    if (ended) {
-      if (!confirmDiscard()) return
-      generationRef.current += 1
-      if (saveState === 'error') queueRef.current = []
-      if (window.location.pathname === '/explorations/new') {
-        resetWorkspace()
-        return
-      }
-      router.push('/explorations/new')
-      return
-    }
-    setEnded(true)
-    setPerspective(null)
-    pendingOriginRef.current = null
-    const explorationId = explorationIdRef.current
-    if (explorationId && questions.length > 0) enqueue({ kind: 'complete', explorationId })
-  }
-
   function applyStarter(text: string, origin: PerspectiveId) {
-    if (ended || mode !== 'Focus') return
+    if (mode !== 'Focus') return
     pendingOriginRef.current = origin
     setComposerError(null)
     setInput(text)
@@ -427,7 +386,7 @@ export default function ExplorationScreen({
   }
 
   function togglePriority(id: string) {
-    if (!ended || !explorationIdRef.current) return
+    if (!acceptsFurtherQuestions(storedStatus) || !explorationIdRef.current) return
     const current = questions.find(question => question.id === id)
     if (!current) return
     const isPrioritised = !current.isPrioritised
@@ -442,6 +401,11 @@ export default function ExplorationScreen({
   }
 
   function onLeaveLibrary(event: MouseEvent<HTMLAnchorElement>) {
+    const effect = workspaceLeaveEffect()
+    if (effect.writes.length > 0 || effect.resetsQuestions || effect.changesStatus) {
+      event.preventDefault()
+      return
+    }
     if (saveState === 'error' && !window.confirm('A save did not finish. Leave and discard that change?')) {
       event.preventDefault()
     }
@@ -450,12 +414,12 @@ export default function ExplorationScreen({
   return <main className="app-shell">
     <aside className="sidebar">
       <header className="brand"><div className="brand-mark" aria-hidden="true"><img src="/logo-removebg-preview.png" alt="" /></div><div><div className="brand-name">curitopia</div><div className="tagline">Keep asking. Go further.</div></div></header>
-      <a className="library-link" href="/" onClick={onLeaveLibrary}>Previous explorations</a>
+      <a className="library-link" href="/" onClick={onLeaveLibrary}>All explorations</a>
       <div className="session-note" role="status"><p className={saveState === 'error' ? 'save-status error' : 'save-status'}>{saveLabel}</p>{saveState === 'error' ? <button type="button" className="retry-save" onClick={retrySave}>Retry</button> : null}</div>
       {hideNotice ? <p className="composer-error" role="alert">{hideNotice}</p> : null}
       <section className="mode-switch" aria-label="Choose exploration mode"><button type="button" className={mode === 'Focus' ? 'active' : ''} onClick={() => changeMode('Focus')}><Focus size={15}/> Focus</button><button type="button" className={mode === 'Quickfire' ? 'active' : ''} onClick={() => changeMode('Quickfire')}><Timer size={15}/> Quickfire</button></section>
-      <section className="panel prompt-panel"><div className="panel-label">{ended ? 'Session complete' : mode === 'Focus' ? 'Explore your question' : 'Keep the questions coming'}</div><form onSubmit={addQuestion}><textarea ref={inputRef} value={input} onChange={event => { setComposerError(null); setInput(event.target.value) }} onKeyDown={onComposerKeyDown} placeholder={ended ? 'Start a new exploration to add questions' : 'Type your next question...'} aria-label="Next question" aria-invalid={composerError ? true : undefined} disabled={ended} />{composerError ? <p className="composer-error" role="alert">{composerError}</p> : null}<button className="add-button" type="submit" disabled={ended}>Add Question <ArrowRight size={17}/></button></form></section>
-      {mode === 'Focus' && !ended ? <section className="panel angle-panel"><div className="panel-label">Explore from another angle</div><div className="angle-grid" role="group" aria-label="Question perspectives">{perspectives.map(item => <button type="button" key={item.id} className={perspective === item.id ? 'active' : ''} aria-pressed={perspective === item.id} onClick={() => { setPerspective(item.id); if (pendingOriginRef.current) pendingOriginRef.current = item.id }}>{item.label}</button>)}</div>{activePerspective ? <ul className="starter-list">{activePerspective.starters.map(starter => <li key={starter}><button type="button" onClick={() => applyStarter(starter, activePerspective.id)}>{starter}</button></li>)}</ul> : <p className="angle-hint">Choose a perspective for optional question starters.</p>}</section> : null}
+      <section className="panel prompt-panel"><div className="panel-label">{mode === 'Focus' ? 'Explore your question' : 'Keep the questions coming'}</div><form onSubmit={addQuestion}><textarea ref={inputRef} value={input} onChange={event => { setComposerError(null); setInput(event.target.value) }} onKeyDown={onComposerKeyDown} placeholder="Type your next question..." aria-label="Next question" aria-invalid={composerError ? true : undefined} />{composerError ? <p className="composer-error" role="alert">{composerError}</p> : null}<button className="add-button" type="submit">Add Question <ArrowRight size={17}/></button></form></section>
+      {mode === 'Focus' ? <section className="panel angle-panel"><div className="panel-label">Explore from another angle</div><div className="angle-grid" role="group" aria-label="Question perspectives">{perspectives.map(item => <button type="button" key={item.id} className={perspective === item.id ? 'active' : ''} aria-pressed={perspective === item.id} onClick={() => { setPerspective(item.id); if (pendingOriginRef.current) pendingOriginRef.current = item.id }}>{item.label}</button>)}</div>{activePerspective ? <ul className="starter-list">{activePerspective.starters.map(starter => <li key={starter}><button type="button" onClick={() => applyStarter(starter, activePerspective.id)}>{starter}</button></li>)}</ul> : <p className="angle-hint">Choose a perspective for optional question starters.</p>}</section> : null}
       <section className="panel stats-panel"><div className="panel-heading"><span>This exploration</span><ChevronDown size={17}/></div><div className="stats"><div><strong>{visibleQuestions.length}</strong><span>questions</span></div><div><strong>{orbitCount}</strong><span>orbits</span></div></div>{hiddenQuestions.length > 0 ? <p className="hidden-count">{hiddenQuestions.length} hidden</p> : null}</section>
       <section className="panel selected-detail" aria-live="polite">
         <div className="panel-heading"><span>Selected question</span></div>
@@ -466,16 +430,15 @@ export default function ExplorationScreen({
         <button type="button" className="show-hidden" aria-pressed={showHidden} disabled={hiddenQuestions.length === 0} onClick={() => setShowHidden(current => !current)}>{showHidden ? 'Hide the hidden list' : 'Show hidden questions'}{hiddenQuestions.length > 0 ? ` (${hiddenQuestions.length})` : ''}</button>
         {showHidden ? hiddenQuestions.length === 0 ? <p className="angle-hint">No hidden questions.</p> : <ul className="hidden-list">{hiddenQuestions.map(question => <li key={question.id}><span>{question.text}</span><button type="button" className="restore-question" onClick={event => { event.stopPropagation(); restoreQuestion(question.id) }}><Eye size={15} aria-hidden="true"/> Restore <span className="sr-only">question: {question.text}</span></button></li>)}</ul> : null}
       </section>
-      {ended ? <section className="panel review-panel" aria-label="Session review"><div className="panel-heading"><span>Session review</span></div><p className="review-count">{visibleQuestions.length} question{visibleQuestions.length === 1 ? '' : 's'} collected</p><p className="review-count">{prioritisedCount} prioritised</p>{hiddenQuestions.length > 0 ? <p className="hidden-count">{hiddenQuestions.length} hidden</p> : null}{visibleQuestions.length === 0 ? <p>No questions were collected in this session.</p> : <ol className="review-list">{visibleQuestions.map(question => <li key={question.id}><button type="button" className="priority-toggle" aria-pressed={question.isPrioritised} aria-label={question.isPrioritised ? `Remove priority from: ${question.text}` : `Mark as important: ${question.text}`} onClick={() => togglePriority(question.id)}><Star size={16} fill={question.isPrioritised ? 'currentColor' : 'none'} /></button><span>{question.text}</span></li>)}</ol>}{explorationIdRef.current ? <ExplorationReflection explorationId={explorationIdRef.current} questions={questions} visibleCount={visibleQuestions.length} saved={saveState === 'saved'} onSelect={id => { setSelected(id); if (questions.find(question => question.id === id)?.isHidden) setShowHidden(true) }} /> : null}</section> : null}
+      {questions.length > 0 ? <section className="panel review-panel" aria-label="Review"><div className="panel-heading"><span>Review</span></div><p className="review-count">{visibleQuestions.length} question{visibleQuestions.length === 1 ? '' : 's'}</p><p className="review-count">{prioritisedCount} prioritised</p>{hiddenQuestions.length > 0 ? <p className="hidden-count">{hiddenQuestions.length} hidden</p> : null}{visibleQuestions.length === 0 ? <p>No visible questions in this exploration.</p> : <ol className="review-list">{visibleQuestions.map(question => <li key={question.id}><button type="button" className="priority-toggle" aria-pressed={question.isPrioritised} aria-label={question.isPrioritised ? `Remove priority from: ${question.text}` : `Mark as important: ${question.text}`} onClick={() => togglePriority(question.id)}><Star size={16} fill={question.isPrioritised ? 'currentColor' : 'none'} /></button><span>{question.text}</span></li>)}</ol>}{explorationIdRef.current ? <ExplorationReflection explorationId={explorationIdRef.current} questions={questions} visibleCount={visibleQuestions.length} saved={saveState === 'saved'} onSelect={id => { setSelected(id); if (questions.find(question => question.id === id)?.isHidden) setShowHidden(true) }} onAddQuestion={text => commitQuestion(text, 'suggestion')} /> : null}</section> : null}
       <div className="connections"><Sparkles size={29}/><div><strong>You&apos;re making<br/>connections.</strong><p>Your thinking is expanding<br/>in new directions.</p></div></div>
-      <button className="end-button" onClick={handleSessionButton}>{ended ? <RotateCcw size={17}/> : <Layers3 size={17}/>} {ended ? 'Start new exploration' : 'End session & explore'}</button>
     </aside>
-    <section className="map-area"><div className="star-field"/><div className="topbar"><form action={signOut} onSubmit={onSignOut}><button className="sign-out" type="submit">Sign out</button></form><div className="map-tabs" role="tablist" aria-label="Question views"><button type="button" role="tab" aria-selected={view === 'map'} className={view === 'map' ? 'selected' : ''} onClick={() => setView('map')}><Map size={17}/> Map</button><button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'selected' : ''} onClick={() => setView('list')}><List size={17}/> List</button><button type="button" disabled aria-disabled="true" title="Timeline is not available in this prototype"><Waypoints size={17}/> Timeline</button></div><button className="more" aria-label="More options"><MoreHorizontal size={20}/></button></div><div className="map-heading"><p>{ended ? 'Your collected questions' : 'A universe of curiosity'}</p><h1>{visibleQuestions.length === 0 ? 'No questions yet' : `${visibleQuestions.length} questions orbiting one idea`}</h1></div>
+    <section className="map-area"><div className="star-field"/><div className="topbar"><a className="library-link" href="/" onClick={onLeaveLibrary}>All explorations</a><form action={signOut} onSubmit={onSignOut}><button className="sign-out" type="submit">Sign out</button></form><div className="map-tabs" role="tablist" aria-label="Question views"><button type="button" role="tab" aria-selected={view === 'map'} className={view === 'map' ? 'selected' : ''} onClick={() => setView('map')}><Map size={17}/> Map</button><button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'selected' : ''} onClick={() => setView('list')}><List size={17}/> List</button><button type="button" disabled aria-disabled="true" title="Timeline is not available in this prototype"><Waypoints size={17}/> Timeline</button></div><button className="more" aria-label="More options"><MoreHorizontal size={20}/></button></div><div className="map-heading"><p>A universe of curiosity</p><h1>{visibleQuestions.length === 0 ? 'No questions yet' : `${visibleQuestions.length} questions orbiting one idea`}</h1></div>
       {view === 'list' ? <ul className="question-list">{visibleQuestions.length === 0 ? <li className="empty-list">No questions yet. Add one to start exploring.</li> : visibleQuestions.map(question => {
         const hideDisabled = question.role === 'central' || visibleQuestions.length <= 1
         const hideLabel = question.role === 'central' ? centralAnchorMessage : visibleQuestions.length <= 1 ? lastVisibleMessage : `Hide question: ${question.text}`
-        return <li key={question.id} className="question-row"><button type="button" className={`question-select ${question.id === selectedQuestion?.id ? 'selected' : ''} ${ended && question.isPrioritised ? 'prioritised' : ''}`} onClick={() => setSelected(question.id)}>{question.text}</button><button type="button" className="hide-question" disabled={hideDisabled} aria-label={hideLabel} title={hideDisabled ? hideLabel : 'Hide question'} onClick={event => { event.stopPropagation(); hideQuestion(question.id) }}><EyeOff size={16} aria-hidden="true"/></button></li>
-      })}</ul> : <QuestionMap questions={visibleQuestions} selected={selectedQuestion?.id ?? ''} onSelect={setSelected} centralQuestionId={centralQuestionId} showPriority={ended}/>}
-      <div className="map-footer"><span><span className="status-dot"/> {ended ? 'Session paused' : 'Live exploration'}</span><span>Select any question to read it in full</span></div>{signOutError ? <p className="sign-out-error" role="alert">Sign-out did not complete. Try again.</p> : null}</section>
+        return <li key={question.id} className="question-row"><button type="button" className={`question-select ${question.id === selectedQuestion?.id ? 'selected' : ''} ${question.isPrioritised ? 'prioritised' : ''}`} onClick={() => setSelected(question.id)}>{question.text}</button><button type="button" className="hide-question" disabled={hideDisabled} aria-label={hideLabel} title={hideDisabled ? hideLabel : 'Hide question'} onClick={event => { event.stopPropagation(); hideQuestion(question.id) }}><EyeOff size={16} aria-hidden="true"/></button></li>
+      })}</ul> : <QuestionMap questions={visibleQuestions} selected={selectedQuestion?.id ?? ''} onSelect={setSelected} centralQuestionId={centralQuestionId} showPriority/>}
+      <div className="map-footer"><span><span className="status-dot"/> Live exploration</span><span>Select any question to read it in full</span></div>{signOutError ? <p className="sign-out-error" role="alert">Sign-out did not complete. Try again.</p> : null}</section>
   </main>
 }

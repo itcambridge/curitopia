@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import OpenAI from 'openai'
-import { requestReflection } from '@/lib/reflection/openai'
+import { requestReflection, openAiConfiguration } from '@/lib/reflection/openai'
 
 const questions = [
   { id: 'q-visible', text: 'What is consciousness?', role: 'central' as const, isPrioritised: true, perspectiveOrigin: 'investigate' as const },
@@ -11,6 +11,33 @@ const questions = [
 function client(create: (body: Record<string, unknown>) => Promise<{ error: unknown; incomplete_details: unknown; output_text: string }>) {
   return { responses: { create } }
 }
+
+test('a missing model variable is distinct from an explicit model', () => {
+  const previousKey = process.env.OPENAI_API_KEY
+  const previousModel = process.env.OPENAI_MODEL
+  process.env.OPENAI_API_KEY = 'test-key'
+  try {
+    delete process.env.OPENAI_MODEL
+    const missing = openAiConfiguration()
+    assert.equal(missing.ok, true)
+    if (missing.ok) {
+      assert.equal(missing.modelSource, 'default')
+      assert.equal(missing.model, 'gpt-6-astra')
+    }
+    process.env.OPENAI_MODEL = 'gpt-6-astra'
+    const explicit = openAiConfiguration()
+    assert.equal(explicit.ok, true)
+    if (explicit.ok) {
+      assert.equal(explicit.modelSource, 'environment')
+      assert.equal(explicit.model, 'gpt-6-astra')
+    }
+  } finally {
+    if (previousKey === undefined) delete process.env.OPENAI_API_KEY
+    else process.env.OPENAI_API_KEY = previousKey
+    if (previousModel === undefined) delete process.env.OPENAI_MODEL
+    else process.env.OPENAI_MODEL = previousModel
+  }
+})
 
 test('a missing API key does not create a model request', async () => {
   const previous = process.env.OPENAI_API_KEY

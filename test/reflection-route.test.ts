@@ -51,15 +51,17 @@ test('a missing exploration and a not-found result use the same response', async
   assert.equal(reflected, false)
 })
 
-test('an incomplete exploration is not sent', async () => {
-  let reflected = false
-  const result = await reflectForExploration({
-    signedIn: true,
-    load: async () => ({ status: 'ok', exploration: exploration([question('a'), question('b')], false) }),
-    reflect: async () => { reflected = true; return { ok: true, reflection } },
-  })
-  assert.equal(result.status, 409)
-  assert.equal(reflected, false)
+test('a saved exploration can be reflected whether or not it was completed', async () => {
+  for (const ended of [false, true]) {
+    let reflected = false
+    const result = await reflectForExploration({
+      signedIn: true,
+      load: async () => ({ status: 'ok', exploration: exploration([question('a'), question('b')], ended) }),
+      reflect: async () => { reflected = true; return { ok: true, reflection } },
+    })
+    assert.equal(result.status, 200)
+    assert.equal(reflected, true)
+  }
 })
 
 test('hidden questions are excluded and priority metadata is kept', async () => {
@@ -120,15 +122,21 @@ test('provider failures use fixed messages and do not echo question text', async
   }
 })
 
-test('the completed-session screen is the only place reflection is mounted', () => {
+test('the workspace offers reflection while editing and does not complete an exploration on leave', () => {
   const source = readFileSync(new URL('../components/exploration-screen.tsx', import.meta.url), 'utf8')
   const mount = source.indexOf('<ExplorationReflection')
   assert.ok(mount > 0)
-  const gate = source.lastIndexOf('ended ?', mount)
-  assert.match(source.slice(gate, mount), /review-panel/)
   assert.equal(source.split('<ExplorationReflection').length, 2)
+  assert.equal(source.includes('saveExplorationStatus'), false)
+  assert.equal(source.includes('End session'), false)
+  assert.equal(source.includes('disabled={ended}'), false)
+  assert.match(source, /All explorations/)
+  assert.match(source, /href="\/"/)
+  assert.match(source, /acceptsFurtherQuestions\(storedStatus\)/)
+  assert.match(source, /workspaceLeaveEffect/)
   assert.match(source, /function hideQuestion/)
   assert.match(source, /function togglePriority/)
-  assert.match(source, /mode === 'Focus' && !ended/)
   assert.match(source, /changeMode\('Quickfire'\)/)
+  assert.match(source, /changeMode\('Focus'\)/)
+  assert.match(source, /onAddQuestion/)
 })

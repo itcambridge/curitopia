@@ -32,7 +32,6 @@ export async function reflectForExploration(input: {
   const loaded = await input.load()
   if (loaded.status === 'error') return httpError(503, 'Reflection is unavailable right now. Try again.')
   if (loaded.status === 'not-found') return httpError(404, unavailable)
-  if (!loaded.exploration.ended) return httpError(409, 'Reflection is available after the session is complete.')
 
   const visible = loaded.exploration.questions.filter(question => !question.isHidden)
   if (visible.length === 0) return httpError(422, 'There are no visible questions to reflect on.')

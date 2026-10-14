@@ -3,11 +3,11 @@
 ## Mission
 Curitopia helps people explore curiosity by asking more questions, suspending judgement, and making their thinking visible. The product has two modes: Quickfire and Focus.
 
-Email and password authentication is implemented against the hosted Supabase project. The previous-explorations library is the signed-in home. Opening an exploration loads that saved session. Questions can be hidden and restored. The central question and the last visible question stay visible. Rename and delete are not built yet.
+Email and password authentication is implemented against the hosted Supabase project. The previous-explorations library is the signed-in home. Opening an exploration loads that saved workspace, and the user can leave and return to continue editing it. Questions can be hidden and restored. The central question and the last visible question stay visible. Rename and delete are not built yet.
 
 Database changes, when requested, are new forward-only migrations applied through the hosted Supabase workflow. Do not edit applied migration files, and do not recreate `explorations` or `questions`.
 
-AI-assisted reflection is implemented for one completed exploration. The owner confirms before visible questions are sent to OpenAI, and the result is not stored. Cross-session profiling and experimentation are specified in `docs/AI_BEHAVIOUR.md` and `docs/REFLECTION_SPEC.md` and are not implemented. Do not add those until that work is explicitly requested.
+AI-assisted reflection is implemented for one saved exploration. It does not require the exploration to be marked completed. The owner confirms before visible questions are sent to OpenAI, and the result is not stored. If the questions change afterwards, the result is marked as an earlier set. Cross-session profiling and experimentation are specified in `docs/AI_BEHAVIOUR.md` and `docs/REFLECTION_SPEC.md` and are not implemented. Do not add those until that work is explicitly requested.
 
 ## First rule: inspect before changing
 Before implementing a task, inspect the existing repository, `package.json`, routing structure, installed dependencies, current components, styling system, and existing interactions. Treat the current v0-generated interface as the baseline to preserve. The signed-in home is the library in `app/page.tsx`. The workspace is `components/exploration-screen.tsx`, opened at `/explorations/new` or `/explorations/[id]`. Do not replace working code or redesign the app just because another approach is familiar.
@@ -17,7 +17,7 @@ Before implementing a task, inspect the existing repository, `package.json`, rou
 - Quickfire protects uninterrupted flow: no mandatory categorisation, coaching prompts, or AI interventions while the user is entering questions. Background saving must not add a dialog after each question.
 - Focus supports deliberate exploration of a central theme. Investigate, Reframe, Connect, and Challenge starters, if present, are optional.
 - Neither mode requires the user to categorise every question.
-- Reflection happens after a Quickfire session, not in the middle of the stream.
+- Reflection is available on a saved exploration. It does not interrupt Quickfire or Focus capture, and it does not require the exploration to be completed. The owner confirms before any question text is sent.
 - The question map is a live visualisation of data, not a static image. Derive node colour from the stable question id. Do not store colour.
 - Persistent explorations require a signed-in user with a confirmed email. Create the database row when the first question is saved. Leave empty explorations out of the library.
 - Ownership is enforced with row-level security, not only in the interface.
