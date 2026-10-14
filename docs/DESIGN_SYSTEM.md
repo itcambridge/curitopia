@@ -16,7 +16,7 @@ The accepted v0 interface and the supplied reference images are the primary visu
 1. Central question.
 2. Individual satellite questions.
 3. Question input and primary action.
-4. Session count and secondary information.
+4. Session count, shown in the compact workspace header.
 5. Decorative stars/orbit lines.
 
 ## Circle and text rules

@@ -138,5 +138,7 @@ test('the workspace offers reflection while editing and does not complete an exp
   assert.match(source, /function togglePriority/)
   assert.match(source, /changeMode\('Quickfire'\)/)
   assert.match(source, /changeMode\('Focus'\)/)
-  assert.match(source, /onAddQuestion/)
+  assert.match(source, /workspace-summary/)
+  assert.equal(source.includes("You're making"), false)
+  assert.equal(source.includes('stats-panel'), false)
 })

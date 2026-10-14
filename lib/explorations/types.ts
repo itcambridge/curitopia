@@ -15,6 +15,7 @@ export type Question = {
 
 export type OpenExploration = {
   id: string
+  title?: string
   mode: ExplorationMode
   ended: boolean
   questions: Question[]

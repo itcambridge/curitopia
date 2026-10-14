@@ -6,11 +6,9 @@ The shell, Quickfire, Focus, map, review, and prioritisation behaviours below re
 ## Current shell
 Preserve the v0-generated dark navy interface:
 
-- Left sidebar with Curitopia identity and tagline.
-- Mode selector: Focus and Quickfire.
-- Question input and Add Question action.
-- Small session statistics derived from the open exploration.
-- Large orbital question map in the main area.
+- Left sidebar with Curitopia identity, mode selector, question input, and the tools for the open exploration.
+- Compact exploration summary at the top centre of the map area: the exploration's display title, mode, question count, and orbit count.
+- Large orbital question map in the main area, placed high in the canvas beneath that summary.
 - Map and List controls. Timeline stays unavailable until a real timeline exists.
 - Selected-question panel that shows the full text of the selected question.
 - Review, with a priority control on each visible question, available while the exploration is still being edited.
@@ -155,12 +153,12 @@ Signed-out visitors see registration, sign-in, and password reset. They do not s
 - A restored exploration uses the same layout rules as a newly entered one, so a given saved order produces the same map.
 
 ## Responsive behaviour
-- Desktop: sidebar plus large map.
-- Narrow screens: stack or collapse the sidebar naturally; preserve question entry and the map without horizontal page overflow.
+- Desktop: a tool sidebar beside a map that fills the remaining viewport. The exploration summary is a compact header above the map, not a sidebar card.
+- Narrow screens: the map comes first, at about three quarters of the viewport height, and the tools follow. Question entry and the map stay usable without horizontal page overflow.
 - The library is usable at desktop and mobile widths.
 - Controls should be usable by keyboard and touch.
 - Do not let decorative elements obscure questions or input controls.
 - Confirmation actions are reachable by keyboard.
 
 ## Session statistics
-Only show metrics that can be calculated from the open exploration. Support question count and the number of visual orbits. Do not display made-up counts such as "new directions", "longest chain", "furthest from start", or "time exploring" unless they are computed from explicit data and their meaning is documented.
+Only show metrics that can be calculated from the open exploration. The workspace header shows the question count and the number of visual orbits. Do not display made-up counts such as "new directions", "longest chain", "furthest from start", or "time exploring" unless they are computed from explicit data and their meaning is documented.

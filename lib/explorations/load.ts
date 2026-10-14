@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 
 type ExplorationRow = {
   id: string
+  title: string | null
   mode: string
   status: string
 }
@@ -79,7 +80,7 @@ export async function loadExploration(id: string): Promise<{ status: 'ok'; explo
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('explorations')
-    .select('id, mode, status')
+    .select('id, title, mode, status')
     .eq('id', id)
     .maybeSingle()
 
@@ -105,6 +106,13 @@ export async function loadExploration(id: string): Promise<{ status: 'ok'; explo
     status: 'ok',
     exploration: {
       id: row.id,
+      title: displayTitle(row.title, questions.map((question, index) => ({
+        question_text: question.text,
+        role: question.role,
+        is_prioritised: question.isPrioritised,
+        is_hidden: question.isHidden,
+        position: index,
+      }))),
       mode,
       ended: row.status === 'completed',
       questions,
