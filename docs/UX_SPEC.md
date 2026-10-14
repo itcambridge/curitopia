@@ -9,7 +9,7 @@ Preserve the v0-generated dark navy interface:
 - Left sidebar with Curitopia identity, mode selector, question input, and the tools for the open exploration.
 - Compact exploration summary at the top centre of the map area: the exploration's display title, mode, question count, and orbit count.
 - Large orbital question map in the main area, placed high in the canvas beneath that summary.
-- Map and List controls. Timeline stays unavailable until a real timeline exists.
+- Map and List controls. A timeline view is not shown until one exists.
 - Selected-question panel that shows the full text of the selected question.
 - Review, with a priority control on each visible question, available while the exploration is still being edited.
 

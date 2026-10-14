@@ -35,7 +35,7 @@ Row-level security tests use pgTAP, run with the Supabase CLI command `supabase 
 - Focus central question remains visible.
 - A Focus starter fills the composer and can be edited before add. Free typing still works.
 - Selecting a question highlights it and exposes its full text.
-- Map and List both show the same questions. Timeline stays disabled.
+- Map and List both show the same questions. Timeline and the unused more-options control are not shown.
 - Switching mode does not clear questions.
 - Start new exploration opens another empty workspace and leaves earlier saved explorations in the library. The old prototype instead cleared the only in-memory list.
 - Layout works at narrow and wide viewport sizes.
