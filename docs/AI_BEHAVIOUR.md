@@ -21,26 +21,24 @@ For the one saved exploration the signed-in owner opened, the server loads rows 
 The purpose is to generate the reflection described below. Signing in is not consent. The screen asks before the request is sent. Cancelling sends nothing.
 
 ## What comes back
-The handler validates a strict JSON object before showing it:
+The handler validates a strict JSON object before showing it. The object has one field, `suggestions`: up to five new questions. A shorter list is valid, including an empty list when nothing distinct was strong enough to suggest. The screen does not show an overview, a theme grouping, a connections report, or notes on prioritised questions.
 
-- `overview` — a short neutral summary.
-- `themes` — title, explanation, and at least two question ids. A theme that cites fewer than two visible questions is dropped. An unknown id rejects the whole response.
-- `connections` — the proposed link, why it might be interesting, supporting question ids, and whether the link is `speculative` or `supported`.
-- `prioritised` — a summary and notes on questions the user marked. Priority is a preference, not a score. The request does not change priority.
-- `furtherQuestions` — optional new questions, labelled in the interface as suggestions the user did not write.
+Each suggestion is question text. A suggestion that repeats another suggestion, or that matches a visible question after trimming, collapsing spaces, ignoring capitalisation, and ignoring a trailing question mark, is dropped. That comparison does not catch every paraphrase. The model instructions also tell it not to rephrase a question the user already asked. A response that is not the expected object, or that contains a suggestion longer than 300 characters, is rejected and the screen shows the same unavailable message as any other invalid result. The screen shows only the validated suggestions.
 
-Fewer items are valid. The screen says when a section has nothing strong enough to show. Further questions can be copied or added to the same exploration. The result lives in the page until the user leaves or the question set changes. A later add, priority change, or hide keeps the result visible and marks it as an earlier set. Reloading asks again. It is not written to the database.
+Each suggestion can be copied or added to the same exploration. The result lives in the page until the user leaves or the question set changes. A later add, priority change, or hide keeps the result visible and marks it as an earlier set. Reloading asks again. It is not written to the database.
 
 ## What reflection is for
-When the user asks, reflection should help them:
+When the user asks, reflection should help them find a useful question to ask next. A good suggestion may:
 
-- Notice recurring themes across their questions.
-- See possible connections between questions that do not look related.
-- Read their prioritised questions in the context of the wider exploration.
-- Notice important questions that are still unanswered.
-- Decide which questions may be worth pursuing through further research or experimentation.
+- Identify a foundational topic whose clarification would make several other questions easier.
+- Reveal a missing perspective, assumption, or alternative explanation.
+- Open a new line of enquiry from a real connection in the exploration.
+- Identify a practical, low-risk next step.
+- Help the user decide which of their questions to investigate first.
 
-The last item stops at the suggestion. How an experiment would be planned is a separate future specification. Do not add that planner inside the reflection phase.
+The model uses the central question and the other visible questions as its context. Priority, mode, and a Focus perspective origin are available when they help it write a better question. It does not summarise what the user has already explored, and it does not claim to know their motivations.
+
+How an experiment would be planned is a separate future specification. Do not add that planner inside the reflection phase.
 
 A distinct proposed capability is noticing recurring interests. It helps the user see subjects they return to. It does not tell them what they think or why. `docs/REFLECTION_SPEC.md` defines three levels: recurring topics, possible connections, and tentative deeper interests. Each level cites the user's questions and stays a suggestion.
 
@@ -57,9 +55,12 @@ The first implementation reads one saved exploration. Analysis across earlier ex
 - Do not diagnose mental-health conditions, infer trauma, or promise therapeutic outcomes.
 - Do not infer sensitive characteristics, beliefs, or motivations as facts. A deeper reading is a hypothesis the user can accept, correct, or reject. Disagreement is not evidence that the interpretation was secretly right.
 - Do not describe a pattern as a personality assessment, a discovery about the unconscious, or a fixed profile of the user.
-- Never invent questions, quotations, or citations. If the visible questions do not support a pattern, say the evidence is insufficient.
+- Never invent quotations of the user's questions, and never present a suggested question as one the user wrote. A suggested question is labelled as a suggestion. If the response is not valid, it is not shown.
 - Question text shows what was explored. Priority shows what the user chose to mark. A Focus perspective origin shows which optional starter filled the composer. Later feedback, if a future policy stores it, shows whether an interpretation resonated. None of these is proof of an underlying interest.
 - Never send question text, titles, or other exploration content to analytics. Do not keep cross-session profiles or generated insights as durable facts about the user unless a later task approves that data policy.
 
 ## Relationship to saved data
-The question store already keeps text, order, role, priority, perspective origin, and `is_hidden`. Those fields are the inputs. Do not add model-output columns to `questions` or `explorations` as part of an unrelated change. A reflection record, if one is approved later, is a separate store.
+The question store already keeps text, order, role, priority, perspective origin, and `is_hidden`. Those fields are the inputs for reflection. Do not add reflection-output columns to `questions` or `explorations`. A reflection record, if one is approved later, is a separate store. `explorations.focus_image_path` is a separate optional reference to an image file the person chose. It does not store a reflection.
+
+## Focus image generation
+Focus image generation is a separate confirmed action. The server calls the OpenAI Image API only after the person chooses Generate. The request contains the prompt they submitted. It does not include the question list, hidden questions, a reflection, or account metadata. `OPENAI_IMAGE_MODEL` selects the image model and defaults to `gpt-image-2.5-flare`. `OPENAI_MODEL` is not used for images. An uploaded image is not sent to OpenAI. The image file, once the person chooses Use image, is stored for that exploration. The prompt is not stored.

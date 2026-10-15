@@ -7,55 +7,63 @@ const questions = [
   { id: 'q-other', text: 'How do dreams relate to memory?', isPrioritised: false },
 ]
 
-function payload(overrides: Record<string, unknown> = {}) {
-  return {
-    overview: 'These questions explore experience and memory.',
-    themes: [{ title: 'Experience', explanation: 'Both questions ask how experience is known.', questionIds: ['q-visible', 'q-other'] }],
-    connections: [{ connection: 'Memory may shape experience.', explanation: 'The questions can be read together.', support: 'speculative', questionIds: ['q-visible', 'q-other'] }],
-    prioritised: { summary: 'You marked one question.', observations: [{ questionId: 'q-visible', note: 'You chose to mark this.' }] },
-    furtherQuestions: [{ text: 'What would count as evidence here?' }],
-    ...overrides,
-  }
-}
-
-test('accepts a reflection that cites only the supplied questions', () => {
-  const reflection = validateReflection(payload(), questions)
-  assert.ok(reflection)
-  assert.equal(reflection?.themes[0]?.questionIds.length, 2)
-  assert.equal(reflection?.prioritised.observations[0]?.questionId, 'q-visible')
+test('accepts only follow-up questions', () => {
+  const reflection = validateReflection({
+    suggestions: [{ text: 'Which of these questions would be easiest to investigate first?' }],
+    overview: 'This summary is not part of the response.',
+  }, questions)
+  assert.deepEqual(reflection, {
+    suggestions: [{ text: 'Which of these questions would be easiest to investigate first?' }],
+  })
 })
 
-test('rejects a reference to a question that was not supplied', () => {
-  const reflection = validateReflection(payload({
-    themes: [{ title: 'Hidden', explanation: 'This cites a question that was not sent.', questionIds: ['q-visible', 'q-hidden'] }],
-  }), questions)
-  assert.equal(reflection, null)
+test('accepts fewer than five suggestions', () => {
+  const reflection = validateReflection({ suggestions: [] }, questions)
+  assert.deepEqual(reflection?.suggestions, [])
+  const two = validateReflection({
+    suggestions: [
+      { text: 'What would a low-risk first step look like?' },
+      { text: 'Which assumption, if wrong, would change the other questions?' },
+    ],
+  }, questions)
+  assert.equal(two?.suggestions.length, 2)
 })
 
-test('drops a theme that cites only one question', () => {
-  const reflection = validateReflection(payload({
-    themes: [{ title: 'Thin', explanation: 'Only one question supports this.', questionIds: ['q-visible'] }],
-  }), questions)
-  assert.ok(reflection)
-  assert.deepEqual(reflection?.themes, [])
+test('keeps at most five suggestions', () => {
+  const reflection = validateReflection({
+    suggestions: [1, 2, 3, 4, 5, 6].map(number => ({ text: `What would change if assumption ${number} were wrong?` })),
+  }, questions)
+  assert.equal(reflection?.suggestions.length, 5)
+  assert.equal(reflection?.suggestions[4]?.text, 'What would change if assumption 5 were wrong?')
 })
 
-test('drops an observation for a question the user did not prioritise', () => {
-  const reflection = validateReflection(payload({
-    prioritised: { summary: 'One mark was a preference.', observations: [{ questionId: 'q-other', note: 'This was not marked.' }] },
-  }), questions)
-  assert.ok(reflection)
-  assert.deepEqual(reflection?.prioritised.observations, [])
+test('drops a suggestion that duplicates an existing question after normalisation', () => {
+  const reflection = validateReflection({
+    suggestions: [
+      { text: '  what   is consciousness?  ' },
+      { text: 'What would a useful first step look like?' },
+    ],
+  }, questions)
+  assert.deepEqual(reflection?.suggestions, [{ text: 'What would a useful first step look like?' }])
 })
 
-test('drops a further question that copies the user', () => {
-  const reflection = validateReflection(payload({
-    furtherQuestions: [{ text: 'What is consciousness?' }, { text: 'What would count as evidence here?' }],
-  }), questions)
-  assert.deepEqual(reflection?.furtherQuestions, [{ text: 'What would count as evidence here?' }])
+test('drops a repeated suggestion', () => {
+  const reflection = validateReflection({
+    suggestions: [
+      { text: 'What would a useful first step look like?' },
+      { text: 'What would a useful first step look like?' },
+      { text: 'Which missing perspective would change this?' },
+    ],
+  }, questions)
+  assert.deepEqual(reflection?.suggestions, [
+    { text: 'What would a useful first step look like?' },
+    { text: 'Which missing perspective would change this?' },
+  ])
 })
 
 test('rejects malformed reflection objects', () => {
   assert.equal(validateReflection(null, questions), null)
   assert.equal(validateReflection({ overview: 'Too incomplete.' }, questions), null)
+  assert.equal(validateReflection({ suggestions: [{ text: 'x'.repeat(301) }] }, questions), null)
+  assert.equal(validateReflection({ suggestions: ['not an object'] }, questions), null)
 })

@@ -5,7 +5,7 @@ Stage A, for one saved exploration, is implemented as described in D-019 and D-0
 
 Still proposed, and not implemented: an include-hidden control, "That resonates" / "Not quite" feedback, Level 3 as a stored interest, Stage B cross-session analysis, and experimentation planning. D-017 and D-018 remain proposals for those parts. This file keeps them so the later work stays specified.
 
-The implemented response is overview, themes, connections, prioritised-question notes, and optional further questions. Further questions are labelled as suggestions the user did not write. Each one can be copied or added to the same exploration.
+The implemented response is up to five new questions, under the heading "Questions to explore next". Fewer than five is valid. Each suggestion is labelled as a question the user did not write, and each one can be copied or added to the same exploration. The response does not include an overview, themes, a connections report, or notes on prioritised questions.
 
 ## When it appears
 Reflection is available on a saved exploration the user can already open. It does not replace the composer.
@@ -54,9 +54,13 @@ On a proposed pattern, the user can answer "That resonates.", "Explore the conne
 No control in this proposal edits question text, hides a question, changes priority, or starts an experiment. Adding a suggested question is a separate, explicit action and creates a normal question.
 
 ## Outputs
-Each reflection is a suggestion. The screen says so in plain language. It does not present the model as having found facts about the user.
+The implemented result is a suggestion, not a finding about the user. The screen says the questions were suggested and that the user did not write them.
 
-The output has five parts, each allowed to be empty when the exploration does not support it:
+The response is a list of at most five new questions. It may be shorter, including empty, when the exploration does not support five distinct directions. The model is instructed not to add filler. The screen does not show a summary of the exploration, a grouping of existing questions, a separate connections report, or an analysis of which questions were prioritised.
+
+A suggestion is dropped when it repeats another suggestion, or when it matches a visible question after a simple text normalisation: trim, collapse spaces, ignore capitalisation, and ignore a trailing question mark. That check does not identify every paraphrase. The instructions also tell the model not to rephrase a question that is already present. A malformed response is not shown.
+
+The sections below remain a proposal for a later task. They are not part of the current response.
 
 1. **Themes.** Short groupings of the user's own questions. Each theme names the questions it used.
 2. **Possible connections.** Pairs or small sets of questions that may be related, including questions that look unrelated. Each connection quotes or cites the user's questions and says why the link is only a possibility.
@@ -83,8 +87,8 @@ Offer a tentative reading of what the user may be drawn to understanding. Exampl
 Level 3 still cites the questions it used. If those questions do not support the reading, the reading is invalid and is not shown.
 
 ## Two stages
-### Stage A — Single-session reflection
-This is the first reflection capability to consider for implementation. It starts from the exploration the user is reviewing. It looks for recurring themes, possible connections, prioritised questions in context, and promising unanswered questions. The three levels above apply inside that one exploration. Questions from other explorations are not included.
+### Stage A — Questions to explore next
+This is the implemented reflection. It starts from the exploration the user is reviewing and suggests up to five questions that could move the exploration forward. Questions from other explorations are not included. The proposed theme, connection, and deeper-interest levels above are not part of this response.
 
 ### Stage B — Cross-session curiosity patterns
 A later extension. The user explicitly asks to analyse selected previous explorations, or their exploration history. Before the request is sent, the screen states the scope in plain language, including how many explorations are included and that hidden questions are excluded unless the user turns that option on.
@@ -97,7 +101,7 @@ A possible future path is: recurring theme, then an interesting question, then a
 ## Failure states
 - **Loading.** The existing exploration remains readable. The reflection area shows that it is working.
 - **Refusal or empty model output.** The screen says reflection is unavailable and leaves questions unchanged.
-- **Invalid output.** Schema validation fails, a citation does not match a supplied question, or the text claims to be the user's question. Discard that output and show the same unavailable state.
+- **Invalid output.** The response is not the expected object, or a suggestion is too long to be a question. Discard that output and show the same unavailable state. A suggestion that copies a visible question is omitted; the rest of a valid list can still be shown.
 - **Network or provider error.** Show the failure and offer retry. Do not mark the exploration unsaved, and do not change `is_hidden`, priority, mode, or completion.
 - **Signed out, or the exploration is no longer readable.** Do not send the request. Show the same not-available result the library already uses for a missing exploration, without the question text.
 
@@ -115,8 +119,8 @@ These apply only after an implementation task is approved.
 2. Review and optional reflection are available while questions can still be added. Adding a question after a reflection marks that result as an earlier set.
 3. Requesting reflection does not change question text, ids, positions, roles, origins, priority, hidden flags, or `status`.
 4. Hidden questions are absent from the request unless Include hidden questions is on.
-5. Prioritised questions are described as the user's choices.
-6. Each theme, connection, and suggestion cites only questions from that request.
+5. The result contains at most five new questions and does not include a summary, themes, a connections report, or notes on prioritised questions.
+6. A suggestion that copies a visible question, or repeats another suggestion, is not shown. Simple text comparison does not catch every paraphrase.
 7. An invalid or failed response leaves the exploration as it was and can be retried.
 8. Another account's exploration cannot be submitted.
 9. Reflection text is not sent to analytics.

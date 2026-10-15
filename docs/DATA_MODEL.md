@@ -1,7 +1,7 @@
 # Data Model
 
 ## Status
-The relational schema below is the approved persistent contract (D-007, D-011, D-012, D-016, and D-020). It is implemented in `supabase/migrations/20261011162400_create_explorations.sql` and `supabase/migrations/20261013191000_add_question_hidden.sql`, both applied to the hosted project. `supabase/migrations/20261014210000_allow_priority_during_exploration.sql` is written and has not been applied. The signed-in home lists saved explorations and opens the one the user selects. Every saved exploration stays editable. Rename and delete are not built. pgTAP has not been run, so the policy tests are not evidence of runtime isolation.
+The relational schema below is the approved persistent contract (D-007, D-011, D-012, D-016, D-020, and D-021). It is implemented in `supabase/migrations/20261011162400_create_explorations.sql` and `supabase/migrations/20261013191000_add_question_hidden.sql`, both applied to the hosted project. `supabase/migrations/20261014210000_allow_priority_during_exploration.sql` and `supabase/migrations/20261015191000_add_focus_image.sql` are written and have not been applied. The signed-in home lists saved explorations and opens the one the user selects. Every saved exploration stays editable. Rename and delete are not built. pgTAP has not been run, so the policy tests are not evidence of runtime isolation.
 
 Two stores are described on purpose. The prototype store records the earlier in-memory page. The migration is the persistent contract the workspace now uses.
 
@@ -59,6 +59,11 @@ One row is one saved exploration for one user.
 | `ended_at` | `timestamptz`, null | Server time when it was completed. Null while active. |
 | `created_at` | `timestamptz`, not null, default `now()` | Server insert time. |
 | `updated_at` | `timestamptz`, not null, default `now()` | Server time of the last change to the exploration or its questions. |
+| `focus_image_path` | `text`, null | Storage path of the optional focus image. Null when the exploration has no image. The image bytes are not stored in this row. |
+
+`focus_image_path`, when set, is `{user_id}/{exploration_id}/{file_id}.png`, `.jpeg`, or `.webp`. The first two segments must match the row's `user_id` and `id`. The column is added by `supabase/migrations/20261015191000_add_focus_image.sql`. That migration has not been applied to the hosted project. Until it is, the workspace still loads an exploration and leaves the background unchanged.
+
+The image file belongs in the private Storage bucket `exploration-images`. The same SQL creates the bucket and limits select, insert, update, and delete to the authenticated owner of that exploration. A signed-in user reads the file through `GET /api/explorations/[id]/focus-image`, which uses that person's Supabase session. There is no public image URL.
 
 Checks:
 

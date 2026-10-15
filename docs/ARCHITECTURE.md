@@ -87,12 +87,13 @@ Names the application reads:
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — publishable key from the Supabase Connect dialog, available in the browser. It is safe to expose only because row-level security rejects unowned rows.
 - `SUPABASE_SERVICE_ROLE_KEY` — server-only, not required for this phase, never prefixed with `NEXT_PUBLIC`.
 - `OPENAI_API_KEY` — server-only secret for reflection of one saved exploration. Never prefix it with `NEXT_PUBLIC_`.
-- `OPENAI_MODEL` — optional model id. When unset, the server uses `gpt-6-astra`.
+- `OPENAI_MODEL` — optional model id for text reflection. When unset, the server uses `gpt-6-astra`.
+- `OPENAI_IMAGE_MODEL` — optional model id for Focus Image generation. When unset, the server uses `gpt-image-2.5-flare`. It is not the same setting as `OPENAI_MODEL`.
 
 Store real values in the local environment used for migration tests and, when deployment is requested, on the Linode host. `.gitignore` already ignores `.env` files and allows a value-free `.env.example`. Do not commit filled env files, keys, or user data. An example file, if added during implementation, lists names only. Do not put the hosted database password or a Supabase access token in the repository.
 
 ### Migrations and security
-- Keep SQL migrations in `supabase/migrations`. The applied files are `20261011162400_create_explorations.sql` and `20261013191000_add_question_hidden.sql`. Do not edit them. `20261014210000_allow_priority_during_exploration.sql` is the next forward-only change. It has not been applied to the hosted project. The same statements are in `supabase/scripts/allow_priority_during_exploration.sql` for the SQL Editor. Do not apply that script automatically.
+- Keep SQL migrations in `supabase/migrations`. The applied files are `20261011162400_create_explorations.sql` and `20261013191000_add_question_hidden.sql`. Do not edit them. `20261014210000_allow_priority_during_exploration.sql` has not been applied to the hosted project. The same statements are in `supabase/scripts/allow_priority_during_exploration.sql`. `20261015191000_add_focus_image.sql` adds the optional focus-image path and private storage policies. It has not been applied. The SQL Editor copy is `supabase/scripts/add_focus_image.sql`. Do not apply either script automatically.
 - Enable row-level security on application tables before any user data is written. The migration does this.
 - Policies restrict rows to `auth.uid()`.
 - The anonymous role has no policies on exploration or question tables.

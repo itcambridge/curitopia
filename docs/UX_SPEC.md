@@ -42,7 +42,18 @@ A signed-in confirmed user has many explorations. Each saved exploration remains
 Leaving an exploration does not complete it. A row that is already `completed` stays `completed` until a later, separate decision changes that column. The workspace still accepts new questions.
 
 ## Reflection
-On a saved exploration, Review offers Reflect on this exploration. The composer stays available. Choosing reflection explains that the visible questions, prioritisation, and Focus perspective origins will be sent to OpenAI. Cancel sends nothing. Confirm shows a loading state, then the suggestion: overview, themes, connections, notes on prioritised questions, and optional further questions. Further questions are labelled as suggestions the user did not write. Each one can be copied or added to the same exploration. Cited questions can be selected. A failure shows the error and Retry. The result is not saved. If the question set changes after a reflection is shown, the result stays visible and is marked as an earlier set, so it is not mistaken for a reflection on the current questions. Hidden questions are not sent. An exploration with more than 80 visible questions explains the limit and sends nothing.
+On a saved exploration, Review offers Reflect on this exploration. The composer stays available. Choosing reflection explains that the visible questions, prioritisation, and Focus perspective origins will be sent to OpenAI. Cancel sends nothing. Confirm shows a loading state, then up to five suggested questions under "Questions to explore next". Those questions are labelled as suggestions the user did not write. Each one can be copied or added to the same exploration. A failure shows the error and Retry. The result is not saved. If the question set changes after a reflection is shown, the result stays visible and is marked as an earlier set, so it is not mistaken for suggestions about the current questions. Hidden questions are not sent. An exploration with more than 80 visible questions explains the limit and sends nothing.
+
+## Focus image
+A saved exploration can have one optional background image. The control is Focus image, on the map. It does nothing until the exploration has been saved, and it does not generate an image when a question is added.
+
+The panel offers two ways to propose an image. Generate starts from an editable prompt inspired by the central question, or by the first visible question when there is no central question. The person can replace that prompt. Generate is the confirmation: the panel says the prompt will be sent to OpenAI and that API usage may incur a cost. Opening the panel or editing the prompt sends nothing. The request contains that prompt only. Upload accepts a JPEG, PNG, or WebP from the device and does not send the file to OpenAI. The server checks the file type, size, and image header.
+
+Either path shows a preview. Use image stores it for that exploration. Cancel, or choosing another image, leaves the current background as it was. Remove image clears it. Hide image and Dim image change only the current view. With no image, or while the image is hidden, the map uses the existing navy background.
+
+The question map stays in front of the image. The image does not receive pointer events. A dark veil keeps the nodes readable, and Dim image darkens it further. If the image cannot be loaded, the navy background remains and the screen offers another attempt.
+
+The hosted database does not have this column until `supabase/scripts/add_focus_image.sql` is run in the SQL Editor. Until then, the exploration still opens and the image cannot be saved.
 
 ## Hiding and restoring a question
 This behaviour is available in the workspace. The hosted database already has `is_hidden`.

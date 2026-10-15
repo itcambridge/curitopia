@@ -6,11 +6,7 @@ import { reflectForExploration } from '@/lib/reflection/decide'
 import { REFLECTION_QUESTION_LIMIT } from '@/lib/reflection/types'
 
 const reflection = {
-  overview: 'A short summary.',
-  themes: [],
-  connections: [],
-  prioritised: { summary: 'You did not mark any questions as prioritised.', observations: [] },
-  furtherQuestions: [],
+  suggestions: [{ text: 'Which of these questions would be easiest to investigate first?' }],
 }
 
 function question(id: string, overrides: Partial<Question> = {}): Question {
@@ -143,4 +139,17 @@ test('the workspace offers reflection while editing and does not complete an exp
   assert.equal(source.includes('stats-panel'), false)
   assert.equal(source.includes('Timeline'), false)
   assert.equal(source.includes('More options'), false)
+})
+
+test('the reflection panel shows only suggested questions, with copy and add', () => {
+  const source = readFileSync(new URL('../components/exploration-reflection.tsx', import.meta.url), 'utf8')
+  assert.match(source, /Questions to explore next/)
+  assert.match(source, /'Copy'/)
+  assert.match(source, /Add to this exploration/)
+  assert.match(source, /Send visible questions/)
+  assert.match(source, /Retry/)
+  assert.match(source, /These suggestions were made for an earlier set of questions/)
+  assert.equal(source.includes('Themes'), false)
+  assert.equal(source.includes('Connections'), false)
+  assert.equal(source.includes('overview'), false)
 })

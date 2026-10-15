@@ -19,6 +19,7 @@ export type OpenExploration = {
   mode: ExplorationMode
   ended: boolean
   questions: Question[]
+  focusImagePath?: string | null
 }
 
 export type LibraryExploration = {

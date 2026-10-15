@@ -7,6 +7,7 @@ type ExplorationRow = {
   title: string | null
   mode: string
   status: string
+  focus_image_path?: string | null
 }
 
 type QuestionRow = {
@@ -74,22 +75,30 @@ function mapQuestions(rows: QuestionRow[]): Question[] | null {
   return questions
 }
 
+function missingFocusImageColumn(error: { code?: string; message?: string }) {
+  return error.code === '42703' || error.code === 'PGRST204' || (error.message ?? '').includes('focus_image_path')
+}
+
 export async function loadExploration(id: string): Promise<{ status: 'ok'; exploration: OpenExploration } | { status: 'not-found' } | { status: 'error' }> {
   if (!explorationIdPattern.test(id)) return { status: 'not-found' }
 
   const supabase = await createClient()
-  const { data, error } = await supabase
+  const withImage = await supabase
     .from('explorations')
-    .select('id, title, mode, status')
+    .select('id, title, mode, status, focus_image_path')
     .eq('id', id)
     .maybeSingle()
+  const loaded = withImage.error && missingFocusImageColumn(withImage.error)
+    ? await supabase.from('explorations').select('id, title, mode, status').eq('id', id).maybeSingle()
+    : withImage
 
-  if (error) return { status: 'error' }
-  if (!data) return { status: 'not-found' }
+  if (loaded.error) return { status: 'error' }
+  if (!loaded.data) return { status: 'not-found' }
 
-  const row = data as ExplorationRow
+  const row = loaded.data as ExplorationRow
   const mode = uiMode(row.mode)
   if (!mode || (row.status !== 'active' && row.status !== 'completed')) return { status: 'error' }
+  const focusImagePath = typeof row.focus_image_path === 'string' ? row.focus_image_path : null
 
   const { data: questionRows, error: questionError } = await supabase
     .from('questions')
@@ -115,6 +124,7 @@ export async function loadExploration(id: string): Promise<{ status: 'ok'; explo
       }))),
       mode,
       ended: row.status === 'completed',
+      focusImagePath,
       questions,
     },
   }

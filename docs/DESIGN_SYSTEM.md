@@ -7,6 +7,7 @@ The accepted v0 interface and the supplied reference images are the primary visu
 - Dark, cinematic, space-inspired canvas.
 - Deep navy backgrounds rather than flat pure black.
 - Fine, low-contrast orbital rings and restrained star details.
+- An optional focus image may sit behind the map as a darkened, still background. It does not replace the navy canvas when no image is set, and it does not cover question nodes or controls.
 - Glowing circles with blue, violet, teal/green, pink and occasional warm amber accents.
 - Central question has the strongest emphasis.
 - Sidebar panels are subtly differentiated from the background with thin borders and restrained gradients.

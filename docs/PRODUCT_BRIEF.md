@@ -45,6 +45,7 @@ Implemented:
 5. Reopening any saved exploration, including one previously marked completed, and continuing to add, hide, restore, and prioritise questions.
 6. Continuing an unfinished saved exploration.
 7. Clear saving, loading, and error states. Question text is limited to 2,000 characters. A failed save is not reported as stored.
+8. An optional focus image for a saved exploration. The person generates one from a prompt they confirm, or uploads a JPEG, PNG, or WebP. The image is stored for that exploration only after they choose Use image. The hosted SQL for the column and private bucket is written and has not been applied.
 
 Specified and not built: renaming an exploration within 120 characters, and permanently deleting one after confirmation.
 
@@ -58,7 +59,7 @@ Still proposed: cross-session curiosity patterns, interpretation feedback, and e
 ## Non-goals
 - A clinical or therapeutic tool, or claims of guaranteed stress relief.
 - Social sharing, collaboration, public profiles, achievements, leaderboards, subscriptions, or social login.
-- AI-generated content, semantic analysis, or AI summaries inside Quickfire or Focus capture. Reflection is a separate confirmed action, described in `docs/AI_BEHAVIOUR.md`.
+- AI-generated content, semantic analysis, or AI summaries inside Quickfire or Focus capture. Reflection and an optional focus image are separate confirmed actions.
 - A complex graph editor or full project-management system.
 - Mandatory categorisation of questions.
 - Anonymous or unconfirmed persistence, account merging, or moving an in-memory prototype session into an account.

@@ -6,7 +6,7 @@ The checks below are the verification plan. Recorded results are listed immediat
 ## Recorded results
 These results come from earlier implementation reports, the user's report of the hosted schema script, and a manual browser check on 2026-10-13. They were not re-run for this note, and this note did not connect to the hosted database.
 
-- `npm test` covers reflection helpers and the resumable-exploration rules: validation, consent, the server decision with mocked OpenAI and a stubbed load, reflection freshness after the question set changes, and source checks that a completed exploration stays editable and that leaving does not write a completion. Those tests do not sign in, do not read the hosted database, and do not prove row-level security.
+- `npm test` covers reflection helpers, the resumable-exploration rules, and focus-image decisions. Focus-image tests mock OpenAI and storage. They check prompt confirmation, file validation, path ownership, replacement, and removal. They do not create a storage bucket and do not prove the hosted storage policies.
 - The user reported that all 16 checks in `supabase/scripts/verify_question_hidden.sql` passed after the hide SQL was applied in the hosted SQL Editor. Those checks read catalog metadata: the `is_hidden` column, its default, the central-question check, the last-visible trigger, and the continued presence of row-level security and the earlier deferred checks. They do not hide a row.
 - End-to-end hide and restore in the signed-in application, including refresh, has not been confirmed. The browser session used while implementing that screen was signed out.
 - Manual browser check, two accounts: each account showed a different exploration library. While signed in as Account B, opening an exploration URL that belongs to Account A showed "This exploration is not available" and did not reveal that exploration. This is a screen-level observation only.
@@ -17,7 +17,7 @@ These results come from earlier implementation reports, the user's report of the
 Do not describe row-level security as fully verified until the pgTAP files have actually passed. The manual two-account browser check above does not replace those tests.
 
 ## First inspect existing tooling
-`package.json` defines `dev`, `build`, `start`, `typecheck` (`tsc --noEmit`), and `test`. `test` runs Node's built-in test runner against the reflection helpers. It does not install Vitest, Jest, Playwright, or Testing Library (D-014). It does not call OpenAI, and it does not log in to Supabase.
+`package.json` defines `dev`, `build`, `start`, `typecheck` (`tsc --noEmit`), and `test`. `test` runs Node's built-in test runner against the reflection helpers and the focus-image decisions. It does not install Vitest, Jest, Playwright, or Testing Library (D-014). It does not call OpenAI, and it does not log in to Supabase.
 
 `typescript.ignoreBuildErrors` has been removed. `pnpm build` validates types and the `typecheck` script remains. Report both results.
 

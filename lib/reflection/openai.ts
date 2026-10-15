@@ -3,16 +3,14 @@ import { reflectionResponseSchema } from '@/lib/reflection/schema'
 import { DEFAULT_OPENAI_MODEL, REFLECTION_REQUEST_TIMEOUT_MS, type ExplorationReflection, type ReflectionFailureReason, type ReflectionQuestionInput } from '@/lib/reflection/types'
 import { validateReflection } from '@/lib/reflection/validate'
 
-const instructions = `You help someone reflect on questions they wrote in one Curitopia exploration.
-The result is a suggestion, not a fact about the person.
-Do not diagnose, infer trauma, or state beliefs, identity, or motivations as facts.
-Do not explain why they think something. Describe what the questions explore.
-Use only the supplied question ids. Never invent a question id.
-A theme needs at least two of their questions. If the evidence is weak, return an empty themes array.
-A connection needs at least two questions. Mark support as "supported" only when the questions themselves state the link. Otherwise use "speculative".
-Prioritisation is the person's preference, not proof that a question is objectively important. If none are prioritised, say so and return no observations.
-furtherQuestions are optional new questions you are suggesting. They must not copy the person's questions, and they are not questions the person wrote.
-Leave an array empty rather than filling it with a generic observation.
+const instructions = `You help someone discover what to ask next in one Curitopia exploration.
+Return at most five new questions in suggestions. Return fewer, or an empty array, when the exploration does not offer that many distinct and useful directions. Never add a filler question to reach five.
+Each suggestion should help the person move forward. Prefer a question that identifies a foundational topic whose clarification would unlock several of their questions, reveals a missing perspective or assumption, opens a genuinely new line of enquiry, identifies a practical low-risk next step, or helps them decide which of their questions to investigate first.
+Use the central question and the other visible questions as the context. Use priority, Quickfire or Focus mode, and a Focus perspective origin only when that signal helps you write a better question. Priority is the person's preference, not proof that a question is objectively important.
+Do not summarise the exploration, group their questions into themes, restate connections they have already made, or analyse which questions they prioritised.
+Do not paraphrase a question they already asked, and do not ask a generic question that would fit almost any exploration.
+Do not explain why you asked. The text of each suggestion is the question itself.
+Do not diagnose, infer trauma, or state beliefs, identity, motivations, or intentions as facts.
 Write in a curious, tentative tone.`
 
 type ReflectionClient = {

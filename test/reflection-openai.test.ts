@@ -59,18 +59,14 @@ test('malformed model output is rejected', async () => {
   })))
   assert.deepEqual(malformed, { ok: false, reason: 'invalid' })
 
-  const unknownId = await requestReflection({ mode: 'Focus', questions }, client(async () => ({
+  const malformedSuggestions = await requestReflection({ mode: 'Focus', questions }, client(async () => ({
     error: null,
     incomplete_details: null,
     output_text: JSON.stringify({
-      overview: 'These questions explore experience.',
-      themes: [{ title: 'Experience', explanation: 'Cited a missing question.', questionIds: ['q-visible', 'missing'] }],
-      connections: [],
-      prioritised: { summary: 'You marked one question.', observations: [] },
-      furtherQuestions: [],
+      suggestions: 'not a list',
     }),
   })))
-  assert.deepEqual(unknownId, { ok: false, reason: 'invalid' })
+  assert.deepEqual(malformedSuggestions, { ok: false, reason: 'invalid' })
 })
 
 test('upstream and rate-limit errors stay on the failure reason', async () => {
@@ -98,16 +94,19 @@ test('a mocked model call stores nothing and receives only the given questions',
       error: null,
       incomplete_details: null,
       output_text: JSON.stringify({
-        overview: 'These questions explore experience and memory.',
-        themes: [],
-        connections: [],
-        prioritised: { summary: 'You marked one question.', observations: [{ questionId: 'q-visible', note: 'A preference, not a score.' }] },
-        furtherQuestions: [],
+        suggestions: [{ text: 'Which assumption, if clarified first, would make the other questions easier?' }],
       }),
     }
   }))
   assert.equal(result.ok, true)
+  if (result.ok) {
+    assert.deepEqual(result.reflection.suggestions, [
+      { text: 'Which assumption, if clarified first, would make the other questions easier?' },
+    ])
+  }
   assert.equal(seen.body?.store, false)
+  assert.equal(seen.body?.max_output_tokens, 4000)
+  assert.deepEqual(seen.body?.reasoning, { effort: 'low' })
   assert.equal(typeof seen.body?.input, 'string')
   assert.match(String(seen.body?.input), /What is consciousness\?/)
   assert.doesNotMatch(String(seen.body?.input), /Hidden question text/)
