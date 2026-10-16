@@ -8,6 +8,7 @@ export type ExperimentItem = {
   kind: ExperimentItemKind
   body: string
   position: number
+  relatedItemId: string | null
 }
 
 export type LoadedExperiment = {
@@ -75,7 +76,7 @@ export async function loadExperiment(explorationId: string, experimentId: string
 
   const items = await supabase
     .from('experiment_items')
-    .select('id, position, kind, body')
+    .select('id, position, kind, body, related_item_id')
     .eq('experiment_id', experimentId)
     .order('position', { ascending: true })
   if (items.error && !missingExperimentItemsTable(items.error)) return { status: 'error' }
@@ -83,10 +84,14 @@ export async function loadExperiment(explorationId: string, experimentId: string
   if (!items.error) {
     for (const row of items.data ?? []) {
       const kind = typeof row.kind === 'string' ? experimentItemKind(row.kind) : null
+      const relatedItemId = row.related_item_id == null ? null : row.related_item_id
       if (!kind || typeof row.id !== 'string' || !isUuid(row.id) || typeof row.body !== 'string' || typeof row.position !== 'number') {
         return { status: 'error' }
       }
-      parsed.push({ id: row.id, kind, body: row.body, position: row.position })
+      if (relatedItemId !== null && (typeof relatedItemId !== 'string' || !isUuid(relatedItemId) || relatedItemId === row.id)) {
+        return { status: 'error' }
+      }
+      parsed.push({ id: row.id, kind, body: row.body, position: row.position, relatedItemId })
     }
   }
 

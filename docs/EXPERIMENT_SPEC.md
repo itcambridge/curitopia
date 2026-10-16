@@ -3,7 +3,7 @@
 ## Status
 The product direction and the technical choices below were approved on 2026-10-16. See D-022.
 
-Phase 1 opens one experiment at `/explorations/[id]/experiments/[experimentId]` and links back to the exploration. Phase 2 lets the owner add, edit, and delete concepts, notes, hypotheses, tests, observations, and discoveries on that page. None of those kinds is required, and they can be written in any order. `related_item_id` stays null. The hosted SQL has not been applied. Until `supabase/scripts/create_experiments.sql` is run in the SQL Editor, an experiment and its items cannot be saved. pgTAP for the new tables has not been run.
+Phase 1 opens one experiment at `/explorations/[id]/experiments/[experimentId]` and links back to the exploration. Phase 2 lets the owner add, edit, and delete concepts, notes, hypotheses, tests, observations, and discoveries. The page shows them as spheres around the question, with a list as the other view. None of those kinds is required, and they can be written in any order. An item can optionally store `related_item_id`. The page draws a line only for that explicit link. The hosted SQL has not been applied. Until `supabase/scripts/create_experiments.sql` is run in the SQL Editor, an experiment and its items cannot be saved. pgTAP for the new tables has not been run.
 
 Phase 3, concept thumbnails and the concept map, is not built. AI assistance stays deferred. No experiment action calls a model.
 
@@ -270,4 +270,4 @@ Approved on 2026-10-16, to be built in three increments. AI stays out of all thr
 9. The route is `/explorations/[id]/experiments/[experimentId]`.
 10. AI assistance is deferred. The first three phases make no model call.
 
-Phase 1 is the create-and-open step. Phase 2 is the optional items on the experiment page. Phase 3 adds the thumbnails and the concept map.
+Phase 1 is the create-and-open step. Phase 2 is the optional items, shown as a constellation and a list. Phase 3 adds the thumbnails.

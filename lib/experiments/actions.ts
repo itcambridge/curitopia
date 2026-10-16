@@ -71,6 +71,7 @@ export type SavedExperimentItem = {
   kind: ExperimentItemKind
   body: string
   position: number
+  relatedItemId: string | null
 }
 
 export type SaveExperimentItemResult = { ok: true; item: SavedExperimentItem } | { ok: false }
@@ -92,11 +93,25 @@ async function experimentForOwner(explorationId: string, experimentId: string) {
   return supabase
 }
 
-function savedItem(row: { id?: string; kind?: string; body?: string; position?: number } | null): SavedExperimentItem | null {
+function savedItem(row: { id?: string; kind?: string; body?: string; position?: number; related_item_id?: string | null } | null): SavedExperimentItem | null {
   if (!row || typeof row.id !== 'string' || typeof row.kind !== 'string' || typeof row.body !== 'string' || typeof row.position !== 'number') return null
   const kind = experimentItemKind(row.kind)
   if (!kind || !isUuid(row.id)) return null
-  return { id: row.id, kind, body: row.body, position: row.position }
+  if (row.related_item_id != null && (typeof row.related_item_id !== 'string' || !isUuid(row.related_item_id) || row.related_item_id === row.id)) return null
+  return { id: row.id, kind, body: row.body, position: row.position, relatedItemId: row.related_item_id ?? null }
+}
+
+async function acceptedRelation(supabase: Awaited<ReturnType<typeof createClient>>, experimentId: string, itemId: string, relatedItemId: string | null) {
+  if (relatedItemId === null) return null
+  if (!isUuid(relatedItemId) || relatedItemId === itemId) return undefined
+  const target = await supabase
+    .from('experiment_items')
+    .select('id')
+    .eq('id', relatedItemId)
+    .eq('experiment_id', experimentId)
+    .maybeSingle()
+  if (target.error || !target.data) return undefined
+  return relatedItemId
 }
 
 async function touchExperiment(supabase: Awaited<ReturnType<typeof createClient>>, explorationId: string, experimentId: string) {
@@ -113,12 +128,15 @@ export async function saveExperimentItem(input: {
   itemId: string
   kind: string
   body: string
+  relatedItemId: string | null
 }): Promise<SaveExperimentItemResult> {
   const kind = experimentItemKind(input.kind)
   const body = experimentItemBody(input.body)
   if (!kind || !body || !isUuid(input.itemId)) return { ok: false }
   const supabase = await experimentForOwner(input.explorationId, input.experimentId)
   if (!supabase) return { ok: false }
+  const relatedItemId = await acceptedRelation(supabase, input.experimentId, input.itemId, input.relatedItemId)
+  if (relatedItemId === undefined) return { ok: false }
 
   const existing = await supabase
     .from('experiment_items')
@@ -131,15 +149,15 @@ export async function saveExperimentItem(input: {
   const written = existing.data
     ? await supabase
       .from('experiment_items')
-      .update({ kind, body, updated_at: new Date().toISOString() })
+      .update({ kind, body, related_item_id: relatedItemId, updated_at: new Date().toISOString() })
       .eq('id', input.itemId)
       .eq('experiment_id', input.experimentId)
-      .select('id, kind, body, position')
+      .select('id, kind, body, position, related_item_id')
       .maybeSingle()
     : await supabase
       .from('experiment_items')
-      .insert({ id: input.itemId, experiment_id: input.experimentId, kind, body })
-      .select('id, kind, body, position')
+      .insert({ id: input.itemId, experiment_id: input.experimentId, kind, body, related_item_id: relatedItemId })
+      .select('id, kind, body, position, related_item_id')
       .maybeSingle()
   const item = savedItem(written.data)
   if (written.error || !item) return { ok: false }

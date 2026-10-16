@@ -8,7 +8,7 @@ The accepted v0 interface and the supplied reference images are the primary visu
 - Deep navy backgrounds rather than flat pure black.
 - Fine, low-contrast orbital rings and restrained star details.
 - An optional focus image may sit behind the map as a darkened, still background. It does not replace the navy canvas when no image is set, and it does not cover question nodes or controls.
-- The phase 1 experiment page uses this same navy palette. Concept nodes and thumbnails are a later increment. A concept thumbnail will sit inside its node. It is not a second Focus Image.
+- The experiment page uses this same navy palette as a constellation. The originating question is the large central sphere. Saved thoughts are smaller glass spheres on orbital rings, with a type icon and label. A list is the alternative view. Concept thumbnails are a later increment and are not a second Focus Image.
 - Glowing circles with blue, violet, teal/green, pink and occasional warm amber accents.
 - Central question has the strongest emphasis.
 - The create sidebar and the review sidebar are subtly differentiated from the background with thin borders and restrained gradients. Review sections stay compact so the map remains the visual centre.

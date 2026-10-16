@@ -57,7 +57,7 @@ The hosted database does not have this column until `supabase/scripts/add_focus_
 ## Experiment (proposed)
 Not built. Product direction is agreed in D-022. Implementation waits for a later approval. The full proposal is `docs/EXPERIMENT_SPEC.md`.
 
-The owner of a saved exploration marks a question as important and chooses Investigate further. That opens one experiment for that question, with the question as the centre, at `/explorations/[id]/experiments/[experimentId]`. Below the question, the owner can add, edit, and delete concepts, notes, hypotheses, tests, observations, and discoveries in any order. None is required. A concept thumbnail and a concept map are a later increment. The user does not have to connect or move anything.
+The owner of a saved exploration marks a question as important and chooses Investigate further. That opens one experiment for that question, with the question as the centre, at `/explorations/[id]/experiments/[experimentId]`. The question is a large sphere. Saved concepts, notes, hypotheses, tests, observations, and discoveries are smaller spheres around it, in saved order. A list shows the same items. Opening a sphere shows the full text, with edit and delete. Add thought creates any of the six kinds. None is required. A line is shown only when an item is explicitly related to another. A concept thumbnail is a later increment. The user does not have to drag anything.
 
 Leaving the experiment returns to the same exploration. The exploration stays editable. Its questions, priorities, hidden state, mode, and `status` are unchanged. The library remains a list of explorations. The experiment is reopened from its question.
 

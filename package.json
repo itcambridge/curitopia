@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --import ./test/register.mjs --test test/reflection-validate.test.ts test/reflection-consent.test.ts test/reflection-route.test.ts test/reflection-openai.test.ts test/exploration-continuation.test.ts test/reflection-freshness.test.ts test/focus-image.test.ts test/experiment-open.test.ts test/map-layout.test.ts test/experiment-items.test.ts"
+    "test": "node --experimental-strip-types --import ./test/register.mjs --test test/reflection-validate.test.ts test/reflection-consent.test.ts test/reflection-route.test.ts test/reflection-openai.test.ts test/exploration-continuation.test.ts test/reflection-freshness.test.ts test/focus-image.test.ts test/experiment-open.test.ts test/map-layout.test.ts test/experiment-items.test.ts test/constellation.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
