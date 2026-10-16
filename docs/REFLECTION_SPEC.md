@@ -3,7 +3,7 @@
 ## Status
 Stage A, for one saved exploration, is implemented as described in D-019 and D-020. The screen offers Reflect on this exploration without requiring the exploration to be completed. The user confirms before any question text is sent to OpenAI. The result is a suggestion kept in the page, not in the database. If questions change afterwards, the suggestion is marked as an earlier set.
 
-Still proposed, and not implemented: an include-hidden control, "That resonates" / "Not quite" feedback, Level 3 as a stored interest, Stage B cross-session analysis, and experimentation planning. D-017 and D-018 remain proposals for those parts. This file keeps them so the later work stays specified.
+Still proposed, and not implemented: an include-hidden control, "That resonates" / "Not quite" feedback, Level 3 as a stored interest, and Stage B cross-session analysis. D-017 and D-018 remain proposals for those parts. A user-authored Experiment workspace is specified separately in `docs/EXPERIMENT_SPEC.md` and is not started from reflection.
 
 The implemented response is up to five new questions, under the heading "Questions to explore next". Fewer than five is valid. Each suggestion is labelled as a question the user did not write, and each one can be copied or added to the same exploration. The response does not include an overview, themes, a connections report, or notes on prioritised questions.
 
@@ -96,7 +96,7 @@ A later extension. The user explicitly asks to analyse selected previous explora
 Stage B does not run silently across every session. It reads only explorations the signed-in owner can already open. Row-level security remains the boundary. One user's questions are never sent or shown as part of another user's reflection. Proposed themes still cite the supporting questions. The user can reject, correct, or explore a suggested pattern. If the selected material is too thin for a reliable pattern, the screen says so.
 
 ## From a pattern to a later exploration
-A possible future path is: recurring theme, then an interesting question, then a question the user prioritises, then a deliberate new exploration, then an optional investigation or experiment. This proposal stops before the experiment. The user chooses whether a pattern becomes a new exploration. Reflection does not open one on their behalf and does not write the investigation plan.
+A possible future path is: recurring theme, then an interesting question, then a question the user prioritises, then a deliberate new exploration, then an optional investigation. This proposal stops before that investigation. The user chooses whether a pattern becomes a new exploration. Reflection does not open an experiment on their behalf and does not write the investigation plan. The experiment workspace, if later approved, is `docs/EXPERIMENT_SPEC.md`.
 
 ## Failure states
 - **Loading.** The existing exploration remains readable. The reflection area shows that it is working.
@@ -137,4 +137,4 @@ Stage B is not part of the first implementation. When a later task approves it, 
 - Implementing Stage B.
 - Rename, delete, or any database migration.
 - A timeline, clustering on the map, or new modes.
-- An experimentation specification.
+- Adding experiment items, thumbnails, or AI suggestions. Phase 1 lives in `docs/EXPERIMENT_SPEC.md`. Reflection still does not start an experiment or write an investigation plan.

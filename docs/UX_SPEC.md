@@ -54,6 +54,15 @@ The question map stays in front of the image. The image does not receive pointer
 
 The hosted database does not have this column until `supabase/scripts/add_focus_image.sql` is run in the SQL Editor. Until then, the exploration still opens and the image cannot be saved.
 
+## Experiment (proposed)
+Not built. Product direction is agreed in D-022. Implementation waits for a later approval. The full proposal is `docs/EXPERIMENT_SPEC.md`.
+
+The owner of a saved exploration marks a question as important and chooses Investigate further. That opens one experiment for that question, with the question as the centre, at `/explorations/[id]/experiments/[experimentId]`. Below the question, the owner can add, edit, and delete concepts, notes, hypotheses, tests, observations, and discoveries in any order. None is required. A concept thumbnail and a concept map are a later increment. The user does not have to connect or move anything.
+
+Leaving the experiment returns to the same exploration. The exploration stays editable. Its questions, priorities, hidden state, mode, and `status` are unchanged. The library remains a list of explorations. The experiment is reopened from its question.
+
+This is not the Focus starter named Investigate, and it is not an AI plan. Reflection does not create an experiment. No model is called. A test is a practical, low-risk action the user describes. The screen must not encourage an unauthorised production change.
+
 ## Hiding and restoring a question
 This behaviour is available in the workspace. The hosted database already has `is_hidden`.
 

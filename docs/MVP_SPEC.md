@@ -57,7 +57,7 @@ This phase is the approved design. Once implementation is requested and built, i
 - Automated row-level security tests with Supabase pgTAP.
 
 ### Out of scope
-- Cross-session profiling, experimentation planning, and a stored reflection. Completed-session reflection is specified in D-019.
+- Cross-session profiling and a stored reflection. Reflection of one saved exploration is specified in D-019 and D-020. Phase 1 of the Experiment workspace is a later addition in `docs/EXPERIMENT_SPEC.md`. AI experiment planning is not part of this MVP.
 - Payments, subscriptions, social login, sharing, or collaboration.
 - Analytics events that include question text, titles, emails, or other exploration content.
 - Notifications.

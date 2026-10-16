@@ -1,3 +1,4 @@
+import { loadExperimentLinks } from '@/lib/experiments/load'
 import { colourFromQuestionId } from '@/lib/explorations/colour'
 import type { ExplorationMode, LibraryExploration, OpenExploration, PerspectiveOrigin, Question, QuestionRole } from '@/lib/explorations/types'
 import { createClient } from '@/lib/supabase/server'
@@ -111,6 +112,9 @@ export async function loadExploration(id: string): Promise<{ status: 'ok'; explo
   if (!questions) return { status: 'error' }
   if (questions.length === 0) return { status: 'not-found' }
 
+  const links = await loadExperimentLinks(row.id)
+  if (!links.ok && !links.missing) return { status: 'error' }
+
   return {
     status: 'ok',
     exploration: {
@@ -125,6 +129,7 @@ export async function loadExploration(id: string): Promise<{ status: 'ok'; explo
       mode,
       ended: row.status === 'completed',
       focusImagePath,
+      experiments: links.ok ? links.links : [],
       questions,
     },
   }

@@ -46,7 +46,7 @@ Approved default:
 - Require a signed-in confirmed user before any persistent exploration is written or read.
 - Enforce ownership with row-level security. The policies are in the applied SQL. pgTAP coverage exists and has not been run, so runtime isolation is still unverified. See `docs/TEST_STRATEGY.md`.
 - Keep source in GitHub. The current origin is `https://github.com/itcambridge/curitopia.git`.
-- Completed-session reflection calls OpenAI from the server after the owner confirms. It does not store the result. Cross-session profiling and experimentation stay unapproved. See D-019.
+- Reflection of one saved exploration calls OpenAI from the server after the owner confirms. It does not require the exploration to be completed, and it does not store the result. Cross-session profiling stays unapproved. Phases 1 and 2 of the user-authored Experiment workspace are in the application (D-022). They do not add a model call. Thumbnails and a concept map are later. See D-019.
 
 ## Production and local databases
 Production data lives only in the hosted Supabase project. The local Supabase CLI stack, including Docker Postgres on port 54322, is a place to rehearse migrations and run `supabase test db`. It is not a second production database and it does not receive real accounts.
@@ -134,4 +134,4 @@ These are unfinished product pieces, not open design choices:
 3. **Analytics.** The page-view component is already present. It must not receive exploration content. Whether it remains on Linode is undecided.
 
 ## Later, not this phase
-Cross-session curiosity patterns and experimentation remain proposals in `docs/REFLECTION_SPEC.md`. Sharing, collaboration, and realtime presence stay out. Social login and guest persistence are excluded by D-010.
+Cross-session curiosity patterns remain a proposal in `docs/REFLECTION_SPEC.md`. Phases 1 and 2 of the Experiment workspace open one experiment and edit its items. The SQL is written and has not been applied. Thumbnails, a concept map, and AI suggestions are later. Sharing, collaboration, and realtime presence stay out. Social login and guest persistence are excluded by D-010.

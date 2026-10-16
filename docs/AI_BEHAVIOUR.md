@@ -1,7 +1,7 @@
 # AI Behaviour — Single-Session Reflection
 
 ## Current decision
-Single-session reflection is implemented for one saved exploration. It does not require that exploration to be marked completed. It is not automatic, and it is not stored. Cross-session curiosity patterns, feedback profiles, and experimentation planning are still proposals. Do not add them, or another model provider, until a separate task says so.
+Single-session reflection is implemented for one saved exploration. It does not require that exploration to be marked completed. It is not automatic, and it is not stored. Cross-session curiosity patterns, feedback profiles, and AI experiment suggestions are still proposals. A user-authored Experiment workspace is specified separately and is not a model call. Do not add those proposals, or another model provider, until a separate task says so.
 
 The call uses the OpenAI Responses API from `app/api/explorations/[id]/reflect/route.ts`. The browser never receives `OPENAI_API_KEY` and never calls OpenAI itself. D-019 records the original approval. D-020 records that reflection and editing continue together. D-017 and D-018 remain proposals beyond that slice.
 
@@ -38,7 +38,7 @@ When the user asks, reflection should help them find a useful question to ask ne
 
 The model uses the central question and the other visible questions as its context. Priority, mode, and a Focus perspective origin are available when they help it write a better question. It does not summarise what the user has already explored, and it does not claim to know their motivations.
 
-How an experiment would be planned is a separate future specification. Do not add that planner inside the reflection phase.
+A user-authored Experiment workspace is specified in `docs/EXPERIMENT_SPEC.md`. The user writes the concepts, tests, observations, and discoveries. Phase 1 of that workspace does not call a model. AI that suggests experiments stays deferred. Do not add that planner inside the reflection phase, and do not start an experiment from a reflection.
 
 A distinct proposed capability is noticing recurring interests. It helps the user see subjects they return to. It does not tell them what they think or why. `docs/REFLECTION_SPEC.md` defines three levels: recurring topics, possible connections, and tentative deeper interests. Each level cites the user's questions and stays a suggestion.
 

@@ -1,7 +1,7 @@
 # Question Map Specification
 
 ## Purpose
-The question map makes the quantity and spread of questions visible. It is an interactive visualisation generated from question data, not an exported or pre-rendered image.
+The question map makes the quantity and spread of questions visible. It is an interactive visualisation generated from question data, not an exported or pre-rendered image. A proposed experiment view would investigate one of those questions in more depth. That view is specified in `docs/EXPERIMENT_SPEC.md` and is not this map.
 
 ## Visual model
 - Central question: largest, most visually prominent node.

@@ -20,6 +20,7 @@ export type OpenExploration = {
   ended: boolean
   questions: Question[]
   focusImagePath?: string | null
+  experiments?: { id: string; questionId: string }[]
 }
 
 export type LibraryExploration = {

@@ -54,12 +54,14 @@ Approved technical default: Supabase Auth and managed Supabase PostgreSQL, with 
 ## Proposed next phase
 Reflection on one saved exploration is implemented. See `docs/AI_BEHAVIOUR.md` and D-019, as updated by D-020. It is optional, confirmed before any text is sent to OpenAI, and not saved. It does not require the exploration to be marked completed.
 
-Still proposed: cross-session curiosity patterns, interpretation feedback, and experiment planning. A recurring interest may later inspire a new exploration. The user would choose whether to pursue it. That path is not built.
+Still proposed: cross-session curiosity patterns and interpretation feedback. A recurring interest may later inspire a new exploration. The user would choose whether to pursue it. That path is not built.
+
+A user-authored Experiment workspace is specified in `docs/EXPERIMENT_SPEC.md` and D-022. Phase 1 opens one experiment from a prioritised question. Phase 2 adds, edits, and deletes optional concepts, notes, hypotheses, tests, observations, and discoveries. Neither calls a model. The hosted SQL has not been applied. Concept thumbnails and a concept map are not built. AI suggestions remain deferred. Reflection does not start an experiment.
 
 ## Non-goals
 - A clinical or therapeutic tool, or claims of guaranteed stress relief.
 - Social sharing, collaboration, public profiles, achievements, leaderboards, subscriptions, or social login.
-- AI-generated content, semantic analysis, or AI summaries inside Quickfire or Focus capture. Reflection and an optional focus image are separate confirmed actions.
+- AI-generated content, semantic analysis, or AI summaries inside Quickfire or Focus capture. Reflection and an optional focus image are separate confirmed actions. The Experiment workspace is user-authored. Phase 1 does not add a model call.
 - A complex graph editor or full project-management system.
 - Mandatory categorisation of questions.
 - Anonymous or unconfirmed persistence, account merging, or moving an in-memory prototype session into an account.

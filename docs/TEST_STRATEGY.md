@@ -143,5 +143,16 @@ Not tested in a browser:
 - Cancelling the confirmation in the browser, and Retry after a failure.
 - Quickfire, Focus, prioritisation, and hide/restore while the reflection panel is on screen.
 
+## Experiment phase, when implementation is requested
+D-022 and `docs/EXPERIMENT_SPEC.md` describe the phase. Phases 1 and 2 have application code and `supabase/tests/experiments_rls.test.sql`. That pgTAP file has not been run. Node tests cover who may open an experiment, the per-item character limit, and that item actions do not write questions or call a model. They do not create the hosted tables. Do not describe experiment security as verified.
+
+When a later task approves implementation, the checks for that task should include:
+
+- Node tests for item rules, the single link back to the originating question, and the rule that leaving an experiment writes nothing to the exploration.
+- Mocked storage tests for thumbnail ownership, replacement, removal, and a failed load. No live image call. The map still renders when the thumbnail is missing.
+- pgTAP for two accounts, covering the new tables and the private thumbnail bucket, run with `supabase test db`. Until that run passes, do not describe the new policies as verified.
+- No new model call, and no question or experiment text in analytics.
+- A browser check, only after it is actually performed, that starting an experiment and returning to the exploration leaves the exploration editable.
+
 ## Reporting
 Report the exact commands run and whether each passed. Separate automated results from manual observations. Never claim a check was run when it was not.

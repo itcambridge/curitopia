@@ -130,6 +130,33 @@ button { cursor:pointer; }
 .review-sidebar .selected-detail, .review-sidebar .hidden-panel, .review-sidebar .review-panel { padding:0 0 12px; border:0; border-radius:0; background:transparent; box-shadow:none; border-bottom:1px solid rgba(105,157,220,.16); }
 .review-sidebar .panel-heading { margin-bottom:6px; font-size:13px; }
 .review-sidebar .review-list { max-height:none; overflow:visible; }
+.review-sidebar .review-list li { flex-wrap:wrap; }
+.investigate-further { flex:1 0 100%; margin-top:6px; border:1px solid rgba(104,161,228,.28); border-radius:10px; background:rgba(4,19,40,.7); color:#dce9ff; padding:6px 10px; font-size:13px; text-align:left; }
+.investigate-further:disabled { opacity:.55; cursor:not-allowed; }
+.investigate-further:focus-visible { outline:2px solid rgba(112,192,255,.55); outline-offset:2px; }
+.experiment-shell { min-height:100vh; display:flex; flex-direction:column; gap:24px; padding:24px; background:#020b1d; }
+.experiment-centre { width:min(640px, 100%); margin:6vh auto 0; text-align:center; }
+.experiment-centre p { margin:0 0 12px; color:#8fb4de; font-size:14px; }
+.experiment-centre h1 { margin:0; color:#f4f7ff; font-size:clamp(22px, 4vw, 34px); line-height:1.35; font-weight:600; }
+.experiment-work { width:min(720px, 100%); margin:0 auto 48px; display:flex; flex-direction:column; gap:14px; }
+.experiment-work h2 { margin:0; color:#f4f7ff; font-size:18px; font-weight:600; }
+.experiment-note { margin:0; color:#8fb4de; font-size:14px; line-height:1.5; }
+.experiment-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px; }
+.experiment-item { border:1px solid rgba(104,161,228,.28); border-radius:14px; background:rgba(7,24,47,.72); padding:14px 16px; }
+.experiment-item-kind { display:flex; align-items:center; gap:8px; color:#dce9ff; font-size:13px; font-weight:600; }
+.experiment-swatch { width:8px; height:8px; border-radius:99px; flex:none; }
+.experiment-item > p { margin:8px 0 0; color:#f4f7ff; font-size:16px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+.experiment-item-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.experiment-item-actions .investigate-further { flex:0 1 auto; margin-top:0; }
+.experiment-item-actions .experiment-save { width:auto; margin-top:0; padding:8px 14px; }
+.experiment-form, .experiment-editor { display:flex; flex-direction:column; gap:8px; }
+.experiment-field { display:flex; flex-direction:column; gap:6px; color:#dce9ff; font-size:13px; }
+.experiment-kind { width:100%; color:#f4f7ff; padding:10px 12px; border:1px solid rgba(102,158,222,.4); border-radius:12px; background:rgba(20,47,80,.67); }
+.experiment-kind:focus-visible, .experiment-editor textarea:focus-visible { outline:2px solid rgba(112,192,255,.55); outline-offset:2px; }
+.experiment-editor textarea, .experiment-form textarea { height:120px; }
+.experiment-count { margin:0; color:#8fb4de; font-size:12px; text-align:right; }
+.experiment-status { margin:0; color:#8fb4de; font-size:13px; }
+@media (max-width:700px) { .experiment-shell { padding:16px; } }
 .sidebar-nav { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
 .sidebar-nav .library-link { margin:0; }
 .sidebar-nav .sign-out { padding:8px 10px; }

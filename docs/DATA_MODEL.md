@@ -1,7 +1,7 @@
 # Data Model
 
 ## Status
-The relational schema below is the approved persistent contract (D-007, D-011, D-012, D-016, D-020, and D-021). It is implemented in `supabase/migrations/20261011162400_create_explorations.sql` and `supabase/migrations/20261013191000_add_question_hidden.sql`, both applied to the hosted project. `supabase/migrations/20261014210000_allow_priority_during_exploration.sql` and `supabase/migrations/20261015191000_add_focus_image.sql` are written and have not been applied. The signed-in home lists saved explorations and opens the one the user selects. Every saved exploration stays editable. Rename and delete are not built. pgTAP has not been run, so the policy tests are not evidence of runtime isolation.
+The relational schema below is the approved persistent contract (D-007, D-011, D-012, D-016, D-020, and D-021). The Experiment tables are approved in D-022. `supabase/migrations/20261016190000_create_experiments.sql` is written and has not been applied to the hosted project. It is not part of the applied contract yet. Concept thumbnail storage is not in that migration. It is implemented in `supabase/migrations/20261011162400_create_explorations.sql` and `supabase/migrations/20261013191000_add_question_hidden.sql`, both applied to the hosted project. `supabase/migrations/20261014210000_allow_priority_during_exploration.sql` and `supabase/migrations/20261015191000_add_focus_image.sql` are written and have not been applied. The signed-in home lists saved explorations and opens the one the user selects. Every saved exploration stays editable. Rename and delete are not built. pgTAP has not been run, so the policy tests are not evidence of runtime isolation.
 
 Two stores are described on purpose. The prototype store records the earlier in-memory page. The migration is the persistent contract the workspace now uses.
 
@@ -259,3 +259,17 @@ Email confirmation is an authentication rule for the later application work. The
 | `ended` boolean | Historical prototype flag. The database still has `explorations.status` and `ended_at`. The workspace does not use them to lock editing. |
 | No title | `explorations.title` |
 | No owner | `explorations.user_id` |
+
+## Proposed experiment store
+Not approved and not migrated. D-022 and `docs/EXPERIMENT_SPEC.md` are the source for this proposal. Do not add these tables as part of another change.
+
+An experiment would belong to the owner of one saved exploration and point at one question in it. Optional concepts, notes, hypotheses, tests, observations, and discoveries would be rows in `experiment_items`, not new columns on `questions`. The question text stays on `questions`. A concept thumbnail would be a private Storage object. `experiment_items.image_path` would store the path, not the bytes. That path is not `explorations.focus_image_path`, and the file would not use the `exploration-images` bucket.
+
+```mermaid
+erDiagram
+  EXPLORATIONS ||--o{ EXPERIMENTS : origins
+  QUESTIONS ||--o| EXPERIMENTS : centres
+  EXPERIMENTS ||--o{ EXPERIMENT_ITEMS : contains
+```
+
+The approved diagram earlier in this file stays the running contract. This second diagram is only the proposal. Item colour and layout would be derived, as they are for questions. Coordinates would not be stored.

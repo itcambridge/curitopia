@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, KeyboardEvent, MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ArrowRight, Eye, EyeOff, Focus, List, Map, PanelRight, Star, Timer } from 'lucide-react'
 import { signOut } from '@/lib/auth/actions'
 import {
@@ -13,7 +14,10 @@ import {
 import { acceptsFurtherQuestions, workspaceLeaveEffect, type StoredExplorationStatus } from '@/lib/explorations/continuation'
 import ExplorationReflection from '@/components/exploration-reflection'
 import FocusImageControl from '@/components/focus-image-control'
+import { openExperiment } from '@/lib/experiments/actions'
+import { mayOpenExperiment } from '@/lib/experiments/rules'
 import { colourFromQuestionId } from '@/lib/explorations/colour'
+import { labelLineY, layoutNodes, orbitRingRadii } from '@/lib/explorations/map-layout'
 import type { DatabaseMode, ExplorationMode, OpenExploration, PerspectiveOrigin, Question, QuestionRole, SaveResult } from '@/lib/explorations/types'
 
 const perspectives = [
@@ -40,7 +44,6 @@ const perspectives = [
 ] as const
 
 type PerspectiveId = typeof perspectives[number]['id']
-type LaidOut = Question & { x: number; y: number; radius: number; orbit: number; delay: string }
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 type SaveOp =
   | { kind: 'create'; explorationId: string; questionId: string; mode: DatabaseMode; questionText: string; role: QuestionRole; perspectiveOrigin: PerspectiveOrigin | null }
@@ -73,64 +76,9 @@ function wrapLabel(text: string, maxChars: number, maxLines: number) {
   return lines
 }
 
-function layoutNodes(questions: Question[], centralQuestionId: string | null): LaidOut[] {
-  if (questions.length === 0) return []
-  const hub = centralQuestionId != null
-    ? questions.find(question => question.id === centralQuestionId) ?? null
-    : questions[0]
-  const satellites = hub ? questions.filter(question => question.id !== hub.id) : questions
-  const satCount = satellites.length
-  const satR = satCount > 60 ? 3.6 : satCount > 25 ? 4.8 : satCount > 10 ? 6.2 : 7.5
-  const centralR = 13
-  const gap = 1.4
-  const firstRing = centralR + satR + gap + 3.5
-  const assigned: { orbit: number; ringR: number; indexInRing: number; capacity: number }[] = []
-  let orbit = 1
-  let ringR = firstRing
-  let placedInRing = 0
-  let capacity = Math.max(6, Math.floor((2 * Math.PI * ringR) / (2 * satR + gap)))
-
-  for (let i = 0; i < satCount; i++) {
-    if (placedInRing >= capacity) {
-      orbit += 1
-      ringR = firstRing + (orbit - 1) * (2 * satR + gap + 2.2)
-      capacity = Math.max(8, Math.floor((2 * Math.PI * ringR) / (2 * satR + gap)))
-      placedInRing = 0
-    }
-    assigned.push({ orbit, ringR, indexInRing: placedInRing, capacity })
-    placedInRing += 1
-  }
-
-  const maxExtent = assigned.reduce((max, item) => Math.max(max, item.ringR + satR), centralR)
-  const scale = maxExtent > 47 ? 47 / maxExtent : 1
-
-  let satelliteIndex = 0
-  return questions.map(question => {
-    if (hub && question.id === hub.id) {
-      return { ...question, x: 50, y: 50, radius: Math.max(centralR * scale, 9), orbit: 0, delay: '0ms' }
-    }
-    const item = assigned[satelliteIndex]
-    satelliteIndex += 1
-    const angle = (item.indexInRing / item.capacity) * 2 * Math.PI - Math.PI / 2
-    const radius = item.ringR * scale
-    return {
-      ...question,
-      x: 50 + Math.cos(angle) * radius,
-      y: 50 + Math.sin(angle) * radius,
-      radius: satR * scale,
-      orbit: item.orbit,
-      delay: `${satelliteIndex * 80}ms`,
-    }
-  })
-}
-
 function QuestionMap({ questions, selected, onSelect, centralQuestionId, showPriority }: { questions: Question[]; selected: string; onSelect: (id: string) => void; centralQuestionId: string | null; showPriority: boolean }) {
   const nodes = useMemo(() => layoutNodes(questions, centralQuestionId), [questions, centralQuestionId])
-  const rings = useMemo(() => [...new Set(nodes.filter(node => node.orbit > 0).map(node => {
-    const dx = node.x - 50
-    const dy = node.y - 50
-    return Math.round(Math.sqrt(dx * dx + dy * dy) * 10) / 10
-  }))], [nodes])
+  const rings = useMemo(() => orbitRingRadii(nodes), [nodes])
   const central = nodes.find(node => node.orbit === 0)
   const centralLines = central ? wrapLabel(central.text, 12, 3) : []
 
@@ -148,11 +96,10 @@ function QuestionMap({ questions, selected, onSelect, centralQuestionId, showPri
     <circle cx="50" cy="50" r="17" fill="url(#core)" filter="url(#glow)" />
     {nodes.map(n => {
       const lines = n.orbit === 0 ? centralLines : wrapLabel(n.text, n.radius > 5.5 ? 11 : 8, 3)
-      const startY = n.y - ((lines.length - 1) * 1.7) / 2
       const prioritised = showPriority && n.isPrioritised
       return <g key={n.id} className={`map-node ${n.id === selected ? 'selected' : ''} ${prioritised ? 'prioritised' : ''}`} style={{ animationDelay: n.delay }} onClick={() => onSelect(n.id)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(n.id) } }} tabIndex={0} role="button" aria-label={prioritised ? `${n.text} (prioritised)` : n.text}>
         <circle cx={n.x} cy={n.y} r={n.radius} fill={n.color} fillOpacity={n.orbit === 0 ? .18 : .14} stroke={prioritised ? '#e8c36a' : n.color} strokeWidth={prioritised ? .5 : n.id === selected ? .45 : .25} filter="url(#glow)" />
-        {lines.map((line, lineIndex) => <text key={lineIndex} x={n.x} y={startY + lineIndex * 1.8} textAnchor="middle" className={n.orbit === 0 ? 'central-text' : 'satellite-text'}>{line}</text>)}
+        {lines.map((line, lineIndex) => <text key={lineIndex} x={n.x} y={labelLineY(n.y, lines.length, lineIndex)} textAnchor="middle" className={n.orbit === 0 ? 'central-text' : 'satellite-text'}>{line}</text>)}
       </g>
     })}
   </svg>
@@ -203,6 +150,10 @@ export default function ExplorationScreen({
   const [focusImageDimmed, setFocusImageDimmed] = useState(false)
   const [focusImageVersion, setFocusImageVersion] = useState(0)
   const [focusImageBroken, setFocusImageBroken] = useState(false)
+  const router = useRouter()
+  const [experimentLinks, setExperimentLinks] = useState<Record<string, string>>(() => Object.fromEntries((initialExploration?.experiments ?? []).map(link => [link.questionId, link.id])))
+  const [investigateError, setInvestigateError] = useState<string | null>(null)
+  const [investigateQuestionId, setInvestigateQuestionId] = useState<string | null>(null)
   const [reviewShown, setReviewShown] = useState(true)
   const [narrowLayout, setNarrowLayout] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -421,6 +372,39 @@ export default function ExplorationScreen({
     enqueue({ kind: 'hidden', questionId: id, isHidden: false })
   }
 
+  function experimentIdFor(questionId: string) {
+    return experimentLinks[questionId] ?? null
+  }
+
+  function canInvestigate(question: Question) {
+    const existing = experimentIdFor(question.id)
+    if (!explorationIdRef.current) return false
+    if (!mayOpenExperiment({ prioritised: question.isPrioritised, existingExperimentId: existing })) return false
+    return existing !== null || saveState === 'saved'
+  }
+
+  async function investigate(question: Question) {
+    const explorationId = explorationIdRef.current
+    if (!explorationId || !canInvestigate(question) || investigateQuestionId) return
+    if (saveState === 'error' && !window.confirm('A save did not finish. Leave and discard that change?')) return
+    const existing = experimentIdFor(question.id)
+    if (existing) {
+      router.push(`/explorations/${explorationId}/experiments/${existing}`)
+      return
+    }
+    const experimentId = crypto.randomUUID()
+    setInvestigateError(null)
+    setInvestigateQuestionId(question.id)
+    const result = await openExperiment({ explorationId, questionId: question.id, experimentId })
+    setInvestigateQuestionId(null)
+    if (!result.ok) {
+      setInvestigateError('Could not open the experiment.')
+      return
+    }
+    setExperimentLinks(current => ({ ...current, [question.id]: result.experimentId }))
+    router.push(`/explorations/${explorationId}/experiments/${result.experimentId}`)
+  }
+
   function togglePriority(id: string) {
     if (!acceptsFurtherQuestions(storedStatus) || !explorationIdRef.current) return
     const current = questions.find(question => question.id === id)
@@ -476,14 +460,16 @@ export default function ExplorationScreen({
         <div className="panel-heading"><span>Selected question</span></div>
         <p>{selectedQuestion ? selectedQuestion.text : 'Add a question to see it here in full.'}</p>
         {selectedQuestion?.role === 'central' ? <p className="angle-hint">{centralAnchorMessage}</p> : null}
+        {selectedQuestion && canInvestigate(selectedQuestion) ? <button type="button" className="investigate-further" disabled={investigateQuestionId === selectedQuestion.id} onClick={() => void investigate(selectedQuestion)}>Investigate further</button> : null}
+        {investigateError ? <p className="composer-error" role="alert">{investigateError}</p> : null}
       </section>
       <section className="hidden-panel">
         <button type="button" className="show-hidden" aria-pressed={showHidden} disabled={hiddenQuestions.length === 0} onClick={() => setShowHidden(current => !current)}>{showHidden ? 'Hide the hidden list' : 'Show hidden questions'}{hiddenQuestions.length > 0 ? ` (${hiddenQuestions.length})` : ''}</button>
-        {showHidden ? hiddenQuestions.length === 0 ? <p className="angle-hint">No hidden questions.</p> : <ul className="hidden-list">{hiddenQuestions.map(question => <li key={question.id}><span>{question.text}</span><button type="button" className="restore-question" onClick={event => { event.stopPropagation(); restoreQuestion(question.id) }}><Eye size={15} aria-hidden="true"/> Restore <span className="sr-only">question: {question.text}</span></button></li>)}</ul> : null}
+        {showHidden ? hiddenQuestions.length === 0 ? <p className="angle-hint">No hidden questions.</p> : <ul className="hidden-list">{hiddenQuestions.map(question => <li key={question.id}><span>{question.text}</span>{canInvestigate(question) ? <button type="button" className="investigate-further" disabled={investigateQuestionId === question.id} onClick={() => void investigate(question)}>Investigate further</button> : null}<button type="button" className="restore-question" onClick={event => { event.stopPropagation(); restoreQuestion(question.id) }}><Eye size={15} aria-hidden="true"/> Restore <span className="sr-only">question: {question.text}</span></button></li>)}</ul> : null}
       </section>
       <section className="review-panel" aria-label="Review">
         <div className="panel-heading"><span>Questions</span></div>
-        {questions.length === 0 ? <p>Add a question to review this exploration.</p> : <><p className="review-count">{visibleQuestions.length} question{visibleQuestions.length === 1 ? '' : 's'}</p><p className="review-count">{prioritisedCount} prioritised</p>{hiddenQuestions.length > 0 ? <p className="hidden-count">{hiddenQuestions.length} hidden</p> : null}{visibleQuestions.length === 0 ? <p>No visible questions in this exploration.</p> : <ol className="review-list">{visibleQuestions.map(question => <li key={question.id}><button type="button" className="priority-toggle" aria-pressed={question.isPrioritised} aria-label={question.isPrioritised ? `Remove priority from: ${question.text}` : `Mark as important: ${question.text}`} onClick={() => togglePriority(question.id)}><Star size={16} fill={question.isPrioritised ? 'currentColor' : 'none'} /></button><span>{question.text}</span></li>)}</ol>}</>}
+        {questions.length === 0 ? <p>Add a question to review this exploration.</p> : <><p className="review-count">{visibleQuestions.length} question{visibleQuestions.length === 1 ? '' : 's'}</p><p className="review-count">{prioritisedCount} prioritised</p>{hiddenQuestions.length > 0 ? <p className="hidden-count">{hiddenQuestions.length} hidden</p> : null}{visibleQuestions.length === 0 ? <p>No visible questions in this exploration.</p> : <ol className="review-list">{visibleQuestions.map(question => <li key={question.id}><button type="button" className="priority-toggle" aria-pressed={question.isPrioritised} aria-label={question.isPrioritised ? `Remove priority from: ${question.text}` : `Mark as important: ${question.text}`} onClick={() => togglePriority(question.id)}><Star size={16} fill={question.isPrioritised ? 'currentColor' : 'none'} /></button><span>{question.text}</span>{canInvestigate(question) ? <button type="button" className="investigate-further" disabled={investigateQuestionId === question.id} onClick={() => void investigate(question)}>Investigate further</button> : null}</li>)}</ol>}</>}
         {explorationIdRef.current ? <ExplorationReflection explorationId={explorationIdRef.current} questions={questions} visibleCount={visibleQuestions.length} saved={saveState === 'saved'} onAddQuestion={text => commitQuestion(text, 'suggestion')} /> : null}
       </section>
     </aside>
