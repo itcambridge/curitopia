@@ -6,12 +6,11 @@ The shell, Quickfire, Focus, map, review, and prioritisation behaviours below re
 ## Current shell
 Preserve the v0-generated dark navy interface:
 
-- Left sidebar with Curitopia identity, mode selector, question input, and the tools for the open exploration.
-- Compact exploration summary at the top centre of the map area: the exploration's display title, mode, question count, and orbit count.
-- Large orbital question map in the main area, placed high in the canvas beneath that summary.
-- Map and List controls. A timeline view is not shown until one exists.
-- Selected-question panel that shows the full text of the selected question.
-- Review, with a priority control on each visible question, available while the exploration is still being edited.
+- Left sidebar for creating questions: Curitopia identity, All explorations, Sign out, the Map and List switch, mode selector, question input, and the optional Focus perspective starters.
+- Centre canvas for the exploration: a compact title and summary, the Hide review control, the orbital question map, and the Focus Image controls beside the live status at the lower left. A configured Focus Image sits behind the map.
+- Right sidebar for review: the selected question, hidden questions, the question list and priority controls, and AI reflection. It scrolls on its own and can be collapsed. Below 1180px it opens as a drawer so the map is not squeezed between three columns.
+- A timeline view is not shown until one exists.
+- Review stays available while the exploration is still being edited.
 
 When an older saved exploration is open, statistics describe that exploration. The prototype heading "Today's exploration" should not imply that a restored exploration happened today.
 
@@ -164,8 +163,9 @@ Signed-out visitors see registration, sign-in, and password reset. They do not s
 - A restored exploration uses the same layout rules as a newly entered one, so a given saved order produces the same map.
 
 ## Responsive behaviour
-- Desktop: a tool sidebar beside a map that fills the remaining viewport. The exploration summary is a compact header above the map, not a sidebar card.
-- Narrow screens: the map comes first, at about three quarters of the viewport height, and the tools follow. Question entry and the map stay usable without horizontal page overflow.
+- Wide screens, from 1180px: three columns. The sidebars have a maximum width and the map uses the space between them. Collapsing review gives that width back to the map.
+- From 901px to 1179px: the create sidebar stays beside the map, and review opens over the map as a drawer.
+- At 900px and below: the map comes first, at about three quarters of the viewport height, and the question composer follows. Review stays a drawer opened from the map bar. Question entry and the map stay usable without horizontal page overflow.
 - The library is usable at desktop and mobile widths.
 - Controls should be usable by keyboard and touch.
 - Do not let decorative elements obscure questions or input controls.

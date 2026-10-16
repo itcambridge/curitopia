@@ -1,7 +1,7 @@
 'use client'
 
 import { FormEvent, KeyboardEvent, MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowRight, Eye, EyeOff, Focus, List, Map, Star, Timer } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, Focus, List, Map, PanelRight, Star, Timer } from 'lucide-react'
 import { signOut } from '@/lib/auth/actions'
 import {
   createExplorationWithFirstQuestion,
@@ -203,6 +203,8 @@ export default function ExplorationScreen({
   const [focusImageDimmed, setFocusImageDimmed] = useState(false)
   const [focusImageVersion, setFocusImageVersion] = useState(0)
   const [focusImageBroken, setFocusImageBroken] = useState(false)
+  const [reviewShown, setReviewShown] = useState(true)
+  const [narrowLayout, setNarrowLayout] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const activePerspective = perspectives.find(item => item.id === perspective)
   const addingRef = useRef(false)
@@ -231,6 +233,28 @@ export default function ExplorationScreen({
     if (!input) addingRef.current = false
     if (!input.trim()) pendingOriginRef.current = null
   }, [input])
+
+  useEffect(() => {
+    const narrow = window.matchMedia('(max-width: 1179px)')
+    const apply = () => setNarrowLayout(narrow.matches)
+    apply()
+    if (narrow.matches) setReviewShown(false)
+    const onChange = () => {
+      apply()
+      if (narrow.matches) setReviewShown(false)
+    }
+    narrow.addEventListener('change', onChange)
+    return () => narrow.removeEventListener('change', onChange)
+  }, [])
+
+  useEffect(() => {
+    if (!reviewShown || !narrowLayout) return
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') setReviewShown(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [reviewShown, narrowLayout])
 
   function enqueue(op: SaveOp) {
     queueRef.current = [...queueRef.current, { generation: generationRef.current, op }]
@@ -423,32 +447,45 @@ export default function ExplorationScreen({
     }
   }
 
-  return <main className="app-shell">
-    <aside className="sidebar">
+  return <main className={`app-shell${reviewShown ? ' review-shown' : ''}`}>
+    <aside className="sidebar" inert={narrowLayout && reviewShown ? true : undefined}>
       <header className="brand"><div className="brand-mark" aria-hidden="true"><img src="/logo-removebg-preview.png" alt="" /></div><div><div className="brand-name">curitopia</div><div className="tagline">Keep asking. Go further.</div></div></header>
-      <a className="library-link" href="/" onClick={onLeaveLibrary}>All explorations</a>
+      <div className="sidebar-nav">
+        <a className="library-link" href="/" onClick={onLeaveLibrary}>All explorations</a>
+        <form action={signOut} onSubmit={onSignOut}><button className="sign-out" type="submit">Sign out</button></form>
+        {signOutError ? <p className="sign-out-error" role="alert">Sign-out did not complete. Try again.</p> : null}
+        <div className="map-tabs" role="tablist" aria-label="Question views"><button type="button" role="tab" aria-selected={view === 'map'} className={view === 'map' ? 'selected' : ''} onClick={() => setView('map')}><Map size={17}/> Map</button><button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'selected' : ''} onClick={() => setView('list')}><List size={17}/> List</button></div>
+      </div>
       <div className="session-note" role="status"><p className={saveState === 'error' ? 'save-status error' : 'save-status'}>{saveLabel}</p>{saveState === 'error' ? <button type="button" className="retry-save" onClick={retrySave}>Retry</button> : null}</div>
       {hideNotice ? <p className="composer-error" role="alert">{hideNotice}</p> : null}
       <section className="mode-switch" aria-label="Choose exploration mode"><button type="button" className={mode === 'Focus' ? 'active' : ''} onClick={() => changeMode('Focus')}><Focus size={15}/> Focus</button><button type="button" className={mode === 'Quickfire' ? 'active' : ''} onClick={() => changeMode('Quickfire')}><Timer size={15}/> Quickfire</button></section>
       <section className="panel prompt-panel"><div className="panel-label">{mode === 'Focus' ? 'Explore your question' : 'Keep the questions coming'}</div><form onSubmit={addQuestion}><textarea ref={inputRef} value={input} onChange={event => { setComposerError(null); setInput(event.target.value) }} onKeyDown={onComposerKeyDown} placeholder="Type your next question..." aria-label="Next question" aria-invalid={composerError ? true : undefined} />{composerError ? <p className="composer-error" role="alert">{composerError}</p> : null}<button className="add-button" type="submit">Add Question <ArrowRight size={17}/></button></form></section>
       {mode === 'Focus' ? <section className="panel angle-panel"><div className="panel-label">Explore from another angle</div><div className="angle-grid" role="group" aria-label="Question perspectives">{perspectives.map(item => <button type="button" key={item.id} className={perspective === item.id ? 'active' : ''} aria-pressed={perspective === item.id} onClick={() => { setPerspective(item.id); if (pendingOriginRef.current) pendingOriginRef.current = item.id }}>{item.label}</button>)}</div>{activePerspective ? <ul className="starter-list">{activePerspective.starters.map(starter => <li key={starter}><button type="button" onClick={() => applyStarter(starter, activePerspective.id)}>{starter}</button></li>)}</ul> : <p className="angle-hint">Choose a perspective for optional question starters.</p>}</section> : null}
-      <section className="panel selected-detail" aria-live="polite">
-        <div className="panel-heading"><span>Selected question</span></div>
-        <p>{selectedQuestion ? selectedQuestion.text : 'Add a question to see it here in full.'}</p>
-        {selectedQuestion?.role === 'central' ? <p className="angle-hint">{centralAnchorMessage}</p> : null}
-      </section>
-      <section className="panel hidden-panel">
-        <button type="button" className="show-hidden" aria-pressed={showHidden} disabled={hiddenQuestions.length === 0} onClick={() => setShowHidden(current => !current)}>{showHidden ? 'Hide the hidden list' : 'Show hidden questions'}{hiddenQuestions.length > 0 ? ` (${hiddenQuestions.length})` : ''}</button>
-        {showHidden ? hiddenQuestions.length === 0 ? <p className="angle-hint">No hidden questions.</p> : <ul className="hidden-list">{hiddenQuestions.map(question => <li key={question.id}><span>{question.text}</span><button type="button" className="restore-question" onClick={event => { event.stopPropagation(); restoreQuestion(question.id) }}><Eye size={15} aria-hidden="true"/> Restore <span className="sr-only">question: {question.text}</span></button></li>)}</ul> : null}
-      </section>
-      {questions.length > 0 ? <section className="panel review-panel" aria-label="Review"><div className="panel-heading"><span>Review</span></div><p className="review-count">{visibleQuestions.length} question{visibleQuestions.length === 1 ? '' : 's'}</p><p className="review-count">{prioritisedCount} prioritised</p>{hiddenQuestions.length > 0 ? <p className="hidden-count">{hiddenQuestions.length} hidden</p> : null}{visibleQuestions.length === 0 ? <p>No visible questions in this exploration.</p> : <ol className="review-list">{visibleQuestions.map(question => <li key={question.id}><button type="button" className="priority-toggle" aria-pressed={question.isPrioritised} aria-label={question.isPrioritised ? `Remove priority from: ${question.text}` : `Mark as important: ${question.text}`} onClick={() => togglePriority(question.id)}><Star size={16} fill={question.isPrioritised ? 'currentColor' : 'none'} /></button><span>{question.text}</span></li>)}</ol>}{explorationIdRef.current ? <ExplorationReflection explorationId={explorationIdRef.current} questions={questions} visibleCount={visibleQuestions.length} saved={saveState === 'saved'} onAddQuestion={text => commitQuestion(text, 'suggestion')} /> : null}</section> : null}
     </aside>
-    <section className="map-area">{showFocusImage ? <img className="focus-image" alt="" src={`/api/explorations/${explorationIdRef.current}/focus-image?v=${focusImageVersion}`} onError={() => setFocusImageBroken(true)} /> : null}{showFocusImage ? <div className={`focus-image-veil${focusImageDimmed ? ' dimmed' : ''}`} /> : null}<div className="star-field"/><div className="workspace-bar"><header className="workspace-summary"><h1 title={explorationTitle}>{explorationTitle}</h1><p>This exploration · {mode} · {visibleQuestions.length} {visibleQuestions.length === 1 ? 'question' : 'questions'} · {orbitCount} {orbitCount === 1 ? 'orbit' : 'orbits'}{hiddenQuestions.length > 0 ? ` · ${hiddenQuestions.length} hidden` : ''}</p></header><div className="topbar"><a className="library-link" href="/" onClick={onLeaveLibrary}>All explorations</a><form action={signOut} onSubmit={onSignOut}><button className="sign-out" type="submit">Sign out</button></form><div className="map-tabs" role="tablist" aria-label="Question views"><button type="button" role="tab" aria-selected={view === 'map'} className={view === 'map' ? 'selected' : ''} onClick={() => setView('map')}><Map size={17}/> Map</button><button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'selected' : ''} onClick={() => setView('list')}><List size={17}/> List</button></div></div></div><div className="map-stage">
+    <section className="map-area" inert={narrowLayout && reviewShown ? true : undefined}>{showFocusImage ? <img className="focus-image" alt="" src={`/api/explorations/${explorationIdRef.current}/focus-image?v=${focusImageVersion}`} onError={() => setFocusImageBroken(true)} /> : null}{showFocusImage ? <div className={`focus-image-veil${focusImageDimmed ? ' dimmed' : ''}`} /> : null}<div className="star-field"/><div className="workspace-bar"><header className="workspace-summary"><h1 title={explorationTitle}>{explorationTitle}</h1><p>This exploration · {mode} · {visibleQuestions.length} {visibleQuestions.length === 1 ? 'question' : 'questions'} · {orbitCount} {orbitCount === 1 ? 'orbit' : 'orbits'}{hiddenQuestions.length > 0 ? ` · ${hiddenQuestions.length} hidden` : ''}</p></header><div className="topbar"><button type="button" className="review-toggle" aria-expanded={reviewShown} aria-controls="review-sidebar" onClick={() => setReviewShown(current => !current)}><PanelRight size={17} aria-hidden="true"/>{reviewShown ? 'Hide review' : 'Review'}</button></div></div><div className="map-stage">
       {view === 'list' ? <ul className="question-list">{visibleQuestions.length === 0 ? <li className="empty-list">No questions yet. Add one to start exploring.</li> : visibleQuestions.map(question => {
         const hideDisabled = question.role === 'central' || visibleQuestions.length <= 1
         const hideLabel = question.role === 'central' ? centralAnchorMessage : visibleQuestions.length <= 1 ? lastVisibleMessage : `Hide question: ${question.text}`
         return <li key={question.id} className="question-row"><button type="button" className={`question-select ${question.id === selectedQuestion?.id ? 'selected' : ''} ${question.isPrioritised ? 'prioritised' : ''}`} onClick={() => setSelected(question.id)}>{question.text}</button><button type="button" className="hide-question" disabled={hideDisabled} aria-label={hideLabel} title={hideDisabled ? hideLabel : 'Hide question'} onClick={event => { event.stopPropagation(); hideQuestion(question.id) }}><EyeOff size={16} aria-hidden="true"/></button></li>
       })}</ul> : <QuestionMap questions={visibleQuestions} selected={selectedQuestion?.id ?? ''} onSelect={setSelected} centralQuestionId={centralQuestionId} showPriority/>}
-      <div className="map-footer"><span><span className="status-dot"/> Live exploration</span><span>Select any question to read it in full</span><FocusImageControl explorationId={explorationIdRef.current} saved={saveState === 'saved'} anchorQuestion={anchorQuestion} hasImage={hasFocusImage} hidden={focusImageHidden} dimmed={focusImageDimmed} broken={focusImageBroken} onUse={() => { setHasFocusImage(true); setFocusImageHidden(false); setFocusImageBroken(false); setFocusImageVersion(version => version + 1) }} onRemove={() => { setHasFocusImage(false); setFocusImageHidden(false); setFocusImageBroken(false) }} onToggleHidden={() => setFocusImageHidden(current => !current)} onToggleDimmed={() => setFocusImageDimmed(current => !current)} onRetryImage={() => { setFocusImageBroken(false); setFocusImageVersion(version => version + 1) }} /></div>{signOutError ? <p className="sign-out-error" role="alert">Sign-out did not complete. Try again.</p> : null}</div></section>
+      <div className="map-footer"><div className="canvas-tools"><FocusImageControl explorationId={explorationIdRef.current} saved={saveState === 'saved'} anchorQuestion={anchorQuestion} hasImage={hasFocusImage} hidden={focusImageHidden} dimmed={focusImageDimmed} broken={focusImageBroken} onUse={() => { setHasFocusImage(true); setFocusImageHidden(false); setFocusImageBroken(false); setFocusImageVersion(version => version + 1) }} onRemove={() => { setHasFocusImage(false); setFocusImageHidden(false); setFocusImageBroken(false) }} onToggleHidden={() => setFocusImageHidden(current => !current)} onToggleDimmed={() => setFocusImageDimmed(current => !current)} onRetryImage={() => { setFocusImageBroken(false); setFocusImageVersion(version => version + 1) }} /><span className="map-status"><span className="status-dot"/> Live exploration</span></div><span>Select any question to read it in full</span></div></div></section>
+    <button type="button" className="review-backdrop" aria-label="Close review" onClick={() => setReviewShown(false)} />
+    <aside id="review-sidebar" className="review-sidebar" aria-label="Review and reflect" inert={reviewShown ? undefined : true}>
+      <div className="review-sidebar-heading"><h2>Review</h2><button type="button" className="review-close" onClick={() => setReviewShown(false)}>Close</button></div>
+      <section className="selected-detail" aria-live="polite">
+        <div className="panel-heading"><span>Selected question</span></div>
+        <p>{selectedQuestion ? selectedQuestion.text : 'Add a question to see it here in full.'}</p>
+        {selectedQuestion?.role === 'central' ? <p className="angle-hint">{centralAnchorMessage}</p> : null}
+      </section>
+      <section className="hidden-panel">
+        <button type="button" className="show-hidden" aria-pressed={showHidden} disabled={hiddenQuestions.length === 0} onClick={() => setShowHidden(current => !current)}>{showHidden ? 'Hide the hidden list' : 'Show hidden questions'}{hiddenQuestions.length > 0 ? ` (${hiddenQuestions.length})` : ''}</button>
+        {showHidden ? hiddenQuestions.length === 0 ? <p className="angle-hint">No hidden questions.</p> : <ul className="hidden-list">{hiddenQuestions.map(question => <li key={question.id}><span>{question.text}</span><button type="button" className="restore-question" onClick={event => { event.stopPropagation(); restoreQuestion(question.id) }}><Eye size={15} aria-hidden="true"/> Restore <span className="sr-only">question: {question.text}</span></button></li>)}</ul> : null}
+      </section>
+      <section className="review-panel" aria-label="Review">
+        <div className="panel-heading"><span>Questions</span></div>
+        {questions.length === 0 ? <p>Add a question to review this exploration.</p> : <><p className="review-count">{visibleQuestions.length} question{visibleQuestions.length === 1 ? '' : 's'}</p><p className="review-count">{prioritisedCount} prioritised</p>{hiddenQuestions.length > 0 ? <p className="hidden-count">{hiddenQuestions.length} hidden</p> : null}{visibleQuestions.length === 0 ? <p>No visible questions in this exploration.</p> : <ol className="review-list">{visibleQuestions.map(question => <li key={question.id}><button type="button" className="priority-toggle" aria-pressed={question.isPrioritised} aria-label={question.isPrioritised ? `Remove priority from: ${question.text}` : `Mark as important: ${question.text}`} onClick={() => togglePriority(question.id)}><Star size={16} fill={question.isPrioritised ? 'currentColor' : 'none'} /></button><span>{question.text}</span></li>)}</ol>}</>}
+        {explorationIdRef.current ? <ExplorationReflection explorationId={explorationIdRef.current} questions={questions} visibleCount={visibleQuestions.length} saved={saveState === 'saved'} onAddQuestion={text => commitQuestion(text, 'suggestion')} /> : null}
+      </section>
+    </aside>
   </main>
 }

@@ -32,7 +32,7 @@ Adapt names to the current page. Do not duplicate the live UI.
 - Session statistics: counts derived from the question list and the layout.
 - Question map: SVG layout and node rendering.
 - Review: end-of-session list and priority toggles.
-- Shell: the existing sidebar and map area.
+- Shell: a create sidebar, the map canvas, and a collapsible review sidebar.
 
 The question list is the source of truth for the prototype. Statistics and the map are derived from it. Layout calculation stays separate from rendering. Layout for an unchanged list stays deterministic. Do not call random number generation on every React render. Do not add a physics engine. One hundred nodes should remain usable.
 
