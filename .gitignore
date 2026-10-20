@@ -18,4 +18,5 @@ node_modules/
 # Common ignores
 node_modules
 .next/
+.tmp-video-check/
 .DS_Store

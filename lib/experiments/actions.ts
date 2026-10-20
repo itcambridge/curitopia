@@ -2,6 +2,7 @@
 
 import { getAuthenticatedClaims } from '@/lib/auth/session'
 import { experimentItemBody, experimentItemKind, mayOpenExperiment, type ExperimentItemKind } from '@/lib/experiments/rules'
+import { missingImagePathColumn, THUMBNAIL_BUCKET, thumbnailPathForItem } from '@/lib/experiments/thumbnail'
 import { createClient } from '@/lib/supabase/server'
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -72,6 +73,7 @@ export type SavedExperimentItem = {
   body: string
   position: number
   relatedItemId: string | null
+  imagePath?: string | null
 }
 
 export type SaveExperimentItemResult = { ok: true; item: SavedExperimentItem } | { ok: false }
@@ -93,12 +95,15 @@ async function experimentForOwner(explorationId: string, experimentId: string) {
   return supabase
 }
 
-function savedItem(row: { id?: string; kind?: string; body?: string; position?: number; related_item_id?: string | null } | null): SavedExperimentItem | null {
-  if (!row || typeof row.id !== 'string' || typeof row.kind !== 'string' || typeof row.body !== 'string' || typeof row.position !== 'number') return null
-  const kind = experimentItemKind(row.kind)
-  if (!kind || !isUuid(row.id)) return null
-  if (row.related_item_id != null && (typeof row.related_item_id !== 'string' || !isUuid(row.related_item_id) || row.related_item_id === row.id)) return null
-  return { id: row.id, kind, body: row.body, position: row.position, relatedItemId: row.related_item_id ?? null }
+function savedItem(row: unknown, experimentId: string): SavedExperimentItem | null {
+  if (!row || typeof row !== 'object') return null
+  const record = row as { id?: unknown; kind?: unknown; body?: unknown; position?: unknown; related_item_id?: unknown; image_path?: unknown }
+  if (typeof record.id !== 'string' || typeof record.kind !== 'string' || typeof record.body !== 'string' || typeof record.position !== 'number') return null
+  const kind = experimentItemKind(record.kind)
+  if (!kind || !isUuid(record.id)) return null
+  if (record.related_item_id != null && (typeof record.related_item_id !== 'string' || !isUuid(record.related_item_id) || record.related_item_id === record.id)) return null
+  const imagePath = typeof record.image_path === 'string' && thumbnailPathForItem(record.image_path, experimentId, record.id) ? record.image_path : record.image_path === undefined ? undefined : null
+  return { id: record.id, kind, body: record.body, position: record.position, relatedItemId: record.related_item_id ?? null, imagePath }
 }
 
 async function acceptedRelation(supabase: Awaited<ReturnType<typeof createClient>>, experimentId: string, itemId: string, relatedItemId: string | null) {
@@ -138,29 +143,39 @@ export async function saveExperimentItem(input: {
   const relatedItemId = await acceptedRelation(supabase, input.experimentId, input.itemId, input.relatedItemId)
   if (relatedItemId === undefined) return { ok: false }
 
-  const existing = await supabase
+  const probed = await supabase
     .from('experiment_items')
-    .select('id')
+    .select('id, image_path')
     .eq('id', input.itemId)
     .eq('experiment_id', input.experimentId)
     .maybeSingle()
-  if (existing.error) return { ok: false }
-
-  const written = existing.data
-    ? await supabase
+  let rowExists = false
+  if (probed.error && missingImagePathColumn(probed.error)) {
+    const idOnly = await supabase
       .from('experiment_items')
-      .update({ kind, body, related_item_id: relatedItemId, updated_at: new Date().toISOString() })
+      .select('id')
       .eq('id', input.itemId)
       .eq('experiment_id', input.experimentId)
-      .select('id, kind, body, position, related_item_id')
       .maybeSingle()
-    : await supabase
-      .from('experiment_items')
-      .insert({ id: input.itemId, experiment_id: input.experimentId, kind, body, related_item_id: relatedItemId })
-      .select('id, kind, body, position, related_item_id')
-      .maybeSingle()
-  const item = savedItem(written.data)
-  if (written.error || !item) return { ok: false }
+    if (idOnly.error) return { ok: false }
+    rowExists = Boolean(idOnly.data)
+  } else if (probed.error) {
+    return { ok: false }
+  } else {
+    rowExists = Boolean(probed.data)
+  }
+
+  const values = { kind, body, related_item_id: relatedItemId, updated_at: new Date().toISOString() }
+  const withImage = 'id, kind, body, position, related_item_id, image_path'
+  const withoutImage = 'id, kind, body, position, related_item_id'
+  const write = (columns: string) => rowExists
+    ? supabase.from('experiment_items').update(values).eq('id', input.itemId).eq('experiment_id', input.experimentId).select(columns).maybeSingle()
+    : supabase.from('experiment_items').insert({ id: input.itemId, experiment_id: input.experimentId, kind, body, related_item_id: relatedItemId }).select(columns).maybeSingle()
+  let written = await write(withImage)
+  if (written.error && missingImagePathColumn(written.error)) written = await write(withoutImage)
+  if (written.error) return { ok: false }
+  const item = savedItem(written.data, input.experimentId)
+  if (!item) return { ok: false }
   await touchExperiment(supabase, input.explorationId, input.experimentId)
   return { ok: true, item }
 }
@@ -173,6 +188,13 @@ export async function deleteExperimentItem(input: {
   if (!isUuid(input.itemId)) return { ok: false }
   const supabase = await experimentForOwner(input.explorationId, input.experimentId)
   if (!supabase) return { ok: false }
+  const current = await supabase
+    .from('experiment_items')
+    .select('image_path')
+    .eq('id', input.itemId)
+    .eq('experiment_id', input.experimentId)
+    .maybeSingle()
+  const imagePath = !current.error && typeof current.data?.image_path === 'string' ? current.data.image_path : null
   const removed = await supabase
     .from('experiment_items')
     .delete()
@@ -180,6 +202,9 @@ export async function deleteExperimentItem(input: {
     .eq('experiment_id', input.experimentId)
     .select('id')
   if (removed.error || !removed.data?.length) return { ok: false }
+  if (imagePath && thumbnailPathForItem(imagePath, input.experimentId, input.itemId)) {
+    await supabase.storage.from(THUMBNAIL_BUCKET).remove([imagePath])
+  }
   await touchExperiment(supabase, input.explorationId, input.experimentId)
   return { ok: true }
 }

@@ -149,10 +149,25 @@ D-022 and `docs/EXPERIMENT_SPEC.md` describe the phase. Phases 1 and 2 have appl
 When a later task approves implementation, the checks for that task should include:
 
 - Node tests for item rules, the single link back to the originating question, and the rule that leaving an experiment writes nothing to the exploration.
-- Mocked storage tests for thumbnail ownership, replacement, removal, and a failed load. No live image call. The map still renders when the thumbnail is missing.
-- pgTAP for two accounts, covering the new tables and the private thumbnail bucket, run with `supabase test db`. Until that run passes, do not describe the new policies as verified.
+- `test/thumbnail.test.ts` mocks storage and the image model. It covers a small WebP, a rejected file, replacement, a failed save that keeps the previous path, removal, and a prompt that is sent only after an explicit request. It checks that all six item types can store an image, that another user's path is refused, and that a saved image covers the sphere without changing its size. It does not call OpenAI. The map still renders when the thumbnail is missing.
+- pgTAP for two accounts, covering the new tables and the thumbnail path check, is in `supabase/tests/experiments_rls.test.sql`. Run it with `supabase test db`. Until that run passes, do not describe the new policies as verified.
 - No new model call, and no question or experiment text in analytics.
 - A browser check, only after it is actually performed, that starting an experiment and returning to the exploration leaves the exploration editable.
+
+## Stories, when a later task requests them
+Phase 1 selection, order, subtitles, the closing question, and the rule that a draft writes nothing are covered by `test/story.test.ts`. Phase 2 prompt limits, confirmation, portrait sizing, and the rule that a story image is not logged or stored are covered by `test/story-image.test.ts`. Slide composition, 1080 by 1920 placement, and the rule that an unconfirmed image is not exported are covered by `test/story-export.test.ts`. Timing, the MP4 container, and the rule that video export stays in the browser are covered by `test/story-video.test.ts`. Routine tests do not encode a full story. `test/story-video-live.mjs` creates one small real H.264 MP4 with the same encoder in Chrome.
+
+When implementation is requested, acceptance checks should include:
+
+- **Selection.** A story can be started from one saved exploration. Hidden questions are absent from the offer. An experiment item appears in the export only after the owner selects it. Unselected questions stay out.
+- **Privacy.** Creating, previewing, and discarding a draft does not publish it and does not upload it. It does not change questions, priorities, hidden state, experiment items, thumbnails, or the Focus Image. If the draft is client-side only, a refresh loses it and there is no story row for another account to read. Story text is not sent to analytics.
+- **Honesty.** A question slide still shows the full question. A hypothesis, test, observation, and discovery keep those labels. No test result is added that the person did not record.
+- **Rendering.** The preview matches the exported images. Slide artwork is produced at the export size, not by enlarging a constellation thumbnail. Editing a subtitle or replacing an image does not write the source question or item.
+- **Export.** The owner can download one 9:16 image per slide after preview. The download does not upload the file. Cancel sends no provider request and creates no file. There is no PDF. A hidden question cannot be added. A closing question exists only if the person wrote it. The Curitopia mark can be left off.
+- **Images.** Generation uses the existing OpenAI Image API only after confirmation, sends only that slide's selected content, and is reviewed before use. The test must inspect the real request size and must not treat a successful call as proof of a composed 9:16 slide until that output has been checked. No story image is written to a bucket or a database path, and the test checks that the payload is not logged. A 256-pixel thumbnail and the landscape Focus Image are not accepted as finished slides without a quality check.
+- **Provider.** Any image call is confirmed first, sends only the selected slide content, and is mocked in automated tests. Video export does not call a model. No music or Suno call is required for this slice.
+
+A live signed-in download is not part of the automated suite. Do not describe that check as done until it has been run.
 
 ## Reporting
 Report the exact commands run and whether each passed. Separate automated results from manual observations. Never claim a check was run when it was not.

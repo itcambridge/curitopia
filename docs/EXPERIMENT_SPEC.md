@@ -5,11 +5,11 @@ The product direction and the technical choices below were approved on 2026-10-1
 
 Phase 1 opens one experiment at `/explorations/[id]/experiments/[experimentId]` and links back to the exploration. Phase 2 lets the owner add, edit, and delete concepts, notes, hypotheses, tests, observations, and discoveries. The page shows them as spheres around the question, with a list as the other view. None of those kinds is required, and they can be written in any order. An item can optionally store `related_item_id`. The page draws a line only for that explicit link. The hosted SQL has not been applied. Until `supabase/scripts/create_experiments.sql` is run in the SQL Editor, an experiment and its items cannot be saved. pgTAP for the new tables has not been run.
 
-Phase 3, concept thumbnails and the concept map, is not built. AI assistance stays deferred. No experiment action calls a model.
+Phase 3 adds one optional thumbnail on any experiment item. The first thumbnail SQL has been applied and limited images to concepts. `supabase/scripts/allow_thumbnails_on_all_experiment_items.sql` extends that to concepts, notes, hypotheses, tests, observations, and discoveries, and has not been applied. A concept map is not built. AI experiment suggestions stay deferred. Creating or editing an item does not call a model. Generating a thumbnail sends only the prompt the person submits. Opening any saved item shows Add image, or Replace image and Remove image. Add thought shows the same controls for every type. A saved image covers that item's sphere. The central question sphere is unchanged.
 
 D-017, D-019, and D-020 still forbid an AI experiment planner inside reflection. This workspace is written by the user.
 
-Quickfire, Focus, editable explorations, reflection, and the Focus Image stay as they are. Starting an experiment does not move, delete, complete, or lock the exploration it came from.
+Quickfire, Focus, editable explorations, reflection, and the Focus Image stay as they are. Starting an experiment does not move, delete, complete, or lock the exploration it came from. The experiment page may show that exploration's Focus Image behind the constellation. Hiding or dimming it there is local to the experiment view and does not write the exploration.
 
 ## Agreed product direction
 
@@ -81,29 +81,29 @@ Proposed presentation, still to be approved with the implementation:
 
 - The originating question is the largest node.
 - Concepts and the other visible items use smaller nodes. Colour comes from the stable item id and the existing palette. It is not stored.
-- Layout is derived from saved order and from the optional association recorded on an item. Coordinates are not stored. Existing items do not jump on an ordinary re-render.
+- Layout is derived from saved order and from the optional association recorded on an item. Coordinates are not stored. Existing items do not jump on an ordinary re-render. Sphere size and ring radius are chosen together, with a gap between the full circles. About six items share the first ring. Further items use another ring. A full ring stays where it is when a later item is added. The map is one square fitted to the space below the heading, and the circles are sized from that square so a wide window cannot stretch them apart from their positions.
 - The user does not have to drag nodes. Free placement is deferred.
-- A concept thumbnail is drawn inside its node. The node stays selectable if the image is missing.
+- A saved image covers that item's sphere, cropped to the circle. The sphere keeps its size and place. A node without an image keeps the text sphere. The node stays selectable if the image is missing.
 - Long text is shortened on the node. The full text is available on selection, as on the question map.
 - Reduced motion, narrow screens, and an empty experiment (question only) are part of the same layout rules.
 
 ## Images
-A concept image is not a Focus Image. The Focus Image is one optional background behind an exploration's question map. `explorations.focus_image_path` points at a file in the private `exploration-images` bucket. A concept thumbnail belongs to one concept inside one experiment, is drawn inside that concept's node, and uses its own rows and its own bucket. The two features do not share files or columns.
+A concept image is not a Focus Image. The Focus Image is one optional background behind an exploration's question map. `explorations.focus_image_path` points at a file in the private `exploration-images` bucket. An item thumbnail belongs to one experiment item, covers that item's sphere, and uses its own rows and its own bucket. The two features do not share files or columns.
 
 ### Storage
 Phase 3 only. The phase 1 migration does not add `image_path` or a bucket. Reuse the private-storage pattern from D-021, without reusing that bucket:
 
 - The file lives in Supabase Storage. The item row stores the object path and small metadata. It does not store the image bytes.
 - The bucket is private. There is no public URL. The browser does not use the service-role key.
-- The bucket name is `experiment-thumbnails`. The files are small compressed WebP thumbnails, not full-resolution originals. The maximum edge and byte size are still to be measured before that phase is built.
+- The bucket name is `experiment-thumbnails`. The stored file is a WebP thumbnail of at most 256 by 256 pixels and 150 KB. The browser aims for about 100 KB. The original upload is not stored.
 - A proposed path is `{user_id}/{experiment_id}/{item_id}/{file_id}`, plus an extension chosen when the thumbnail format is decided. The first segment must be the experiment owner's user id. The second must be that experiment's id.
 - Select, insert, update, and delete on `storage.objects` are limited to the authenticated owner. A `SECURITY INVOKER` function can resolve the path to an experiment the current user owns, in the same spirit as `exploration_image_owner`. The exact function is part of the implementation migration, which this task does not write.
 - The owner reads a thumbnail through an application route that uses that person's Supabase session. Another user's id, path, or experiment id does not return the file. A missing object and another user's object should fail the same way, so a guess does not reveal that the image exists.
 - The server inspects the uploaded bytes before saving them. Type, size, and image content are checked on the server, not only in the browser.
-- Upload does not call OpenAI. Generating a concept image with a model is not part of the first version.
+- Upload does not call OpenAI. Generate sends only the prompt the person edited and submitted, using `OPENAI_IMAGE_MODEL`. Opening the editor does not call the model. The browser turns both the upload and the generated file into the thumbnail. The server rejects anything that is not a WebP within the size limits.
 - Do not remove a usable thumbnail until its replacement has been stored. If removing the old file fails after the new path is saved, keep the new image. If deleting the file fails after the path is cleared, restore the path. Those are the Focus Image failure rules, and they fit here.
 
-Only a concept has an image in this proposal. Notes, hypotheses, tests, observations, and discoveries do not.
+Any of the six item types may have one image. The image is optional. The central question does not use this thumbnail.
 
 ### Loading
 The map must stay fast when an experiment has several concepts:
@@ -114,16 +114,8 @@ The map must stay fast when an experiment has several concepts:
 - While a thumbnail is loading, and when it cannot be loaded, the node shows a placeholder in the thumbnail's box. The placeholder uses the node's derived colour. The node does not change size when the image arrives or fails.
 - The map is drawn from the item rows. A slow or failed thumbnail does not block the other nodes or the text.
 
-### Limits still to assess
-Do not treat any pixel size, format, or compression setting as chosen. The repository does not currently resize images. Focus Image stores a file that has already passed type and dimension checks. Concept thumbnails need a derived small file, which the current application does not produce.
-
-Before implementation, measure sample images and record the chosen limits in `docs/DECISIONS.md`. The assessment should answer:
-
-- The maximum edge of a thumbnail, and the maximum file size.
-- The format and whether compression settings are fixed.
-- Whether the original upload is discarded after a thumbnail is stored, or kept beside the thumbnail and never sent to the map.
-
-The recommendation, not yet a decision, is to store only the thumbnail when the product needs no larger view. That keeps the map from ever requesting a full-resolution file. The cost is that a larger view later would need a new upload. Storing both files is the alternative if a larger view is required. Choose one of those after the samples are measured.
+### Thumbnail limits
+D-023 sets the limits. A thumbnail is WebP, at most 256 pixels on each edge, and at most 150 KB. The browser compresses toward about 100 KB. Only that thumbnail is stored. The application has no image-encoding library, so the browser canvas makes the file and the server checks its contents, dimensions, and size before saving it.
 
 ## AI assistance
 AI that suggests a better experiment, names an assumption, or offers another way to investigate is a later capability. It is advisory. The user chooses what to accept and what to do next. The first version must be useful with no model call at all.
@@ -227,7 +219,7 @@ Include:
 - Optional concepts, notes, hypotheses, tests, observations, and discoveries, in any order, with edit and delete of those items.
 - An optional single association from an item to another item or, by default, to the originating question.
 - A derived concept map that shows the question at the centre.
-- Optional concept thumbnails, using the storage and loading rules above, once the size and format have been decided.
+- Optional thumbnails on any of the six item types, using the storage and loading rules above. A saved image covers its sphere.
 - Placeholders, lazy thumbnail loading, and a map that still works when an image fails.
 - The practical-experiment guidance, including the production-change expectation.
 - Ownership enforced in the database.

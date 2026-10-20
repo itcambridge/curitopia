@@ -1,3 +1,4 @@
+import { missingImagePathColumn, thumbnailPathForItem } from '@/lib/experiments/thumbnail'
 import { experimentItemKind, type ExperimentItemKind } from '@/lib/experiments/rules'
 import { createClient } from '@/lib/supabase/server'
 
@@ -9,6 +10,7 @@ export type ExperimentItem = {
   body: string
   position: number
   relatedItemId: string | null
+  imagePath: string | null
 }
 
 export type LoadedExperiment = {
@@ -16,6 +18,7 @@ export type LoadedExperiment = {
   explorationId: string
   questionId: string
   questionText: string
+  hasFocusImage: boolean
   items: ExperimentItem[]
 }
 
@@ -74,15 +77,29 @@ export async function loadExperiment(explorationId: string, experimentId: string
   if (question.error) return { status: 'error' }
   if (!question.data || typeof question.data.question_text !== 'string') return { status: 'not-found' }
 
-  const items = await supabase
+  const focus = await supabase
+    .from('explorations')
+    .select('focus_image_path')
+    .eq('id', explorationId)
+    .maybeSingle()
+  const hasFocusImage = !focus.error && typeof focus.data?.focus_image_path === 'string' && focus.data.focus_image_path.length > 0
+
+  const withImage = await supabase
     .from('experiment_items')
-    .select('id, position, kind, body, related_item_id')
+    .select('id, position, kind, body, related_item_id, image_path')
     .eq('experiment_id', experimentId)
     .order('position', { ascending: true })
+  const items = withImage.error && missingImagePathColumn(withImage.error)
+    ? await supabase
+      .from('experiment_items')
+      .select('id, position, kind, body, related_item_id')
+      .eq('experiment_id', experimentId)
+      .order('position', { ascending: true })
+    : withImage
   if (items.error && !missingExperimentItemsTable(items.error)) return { status: 'error' }
   const parsed: ExperimentItem[] = []
   if (!items.error) {
-    for (const row of items.data ?? []) {
+    for (const row of (items.data ?? []) as Array<{ id?: unknown; position?: unknown; kind?: unknown; body?: unknown; related_item_id?: unknown; image_path?: unknown }>) {
       const kind = typeof row.kind === 'string' ? experimentItemKind(row.kind) : null
       const relatedItemId = row.related_item_id == null ? null : row.related_item_id
       if (!kind || typeof row.id !== 'string' || !isUuid(row.id) || typeof row.body !== 'string' || typeof row.position !== 'number') {
@@ -91,7 +108,9 @@ export async function loadExperiment(explorationId: string, experimentId: string
       if (relatedItemId !== null && (typeof relatedItemId !== 'string' || !isUuid(relatedItemId) || relatedItemId === row.id)) {
         return { status: 'error' }
       }
-      parsed.push({ id: row.id, kind, body: row.body, position: row.position, relatedItemId })
+      const rawPath = 'image_path' in row ? row.image_path : null
+      const imagePath = typeof rawPath === 'string' && thumbnailPathForItem(rawPath, experimentId, row.id) ? rawPath : null
+      parsed.push({ id: row.id, kind, body: row.body, position: row.position, relatedItemId, imagePath })
     }
   }
 
@@ -102,6 +121,7 @@ export async function loadExperiment(explorationId: string, experimentId: string
       explorationId,
       questionId: question.data.id,
       questionText: question.data.question_text,
+      hasFocusImage,
       items: parsed,
     },
   }

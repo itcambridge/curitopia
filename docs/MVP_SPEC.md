@@ -58,7 +58,7 @@ This phase is the approved design. Once implementation is requested and built, i
 
 ### Out of scope
 - Cross-session profiling and a stored reflection. Reflection of one saved exploration is specified in D-019 and D-020. Phase 1 of the Experiment workspace is a later addition in `docs/EXPERIMENT_SPEC.md`. AI experiment planning is not part of this MVP.
-- Payments, subscriptions, social login, sharing, or collaboration.
+- Payments, subscriptions, social login, or collaboration. A public story feed is not part of this MVP. Curitopia Stories, a later proposal in `docs/STORIES_SPEC.md`, is also outside this MVP.
 - Analytics events that include question text, titles, emails, or other exploration content.
 - Notifications.
 - Additional modes, a timeline implementation, or a graph editor.
@@ -130,6 +130,11 @@ These apply after the hide controls are requested and built. The database rules 
 40. The central question cannot be hidden. The interface explains that it anchors the exploration and that a different centre means a new exploration.
 41. The last visible question cannot be hidden.
 42. Hiding or restoring a question does not change `status` or `ended_at`.
+
+## Stories, recommended later and not in this MVP
+D-025 records the direction. `docs/STORIES_SPEC.md` is the detail. The persistence acceptance criteria above do not include a stored story.
+
+Stories are in the application: selection from one exploration, an editable slide order, a 9:16 review, and one silent MP4 download. PDF, stored drafts, hidden questions, a suggested closing question, and any upload to another network are out, as are music, narration, profiles, followers, and likes. The detail is `docs/STORIES_SPEC.md`.
 
 ## Test data
 Test the prototype and, once built, the persistence phase with:

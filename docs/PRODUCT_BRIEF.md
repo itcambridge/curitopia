@@ -4,7 +4,9 @@
 The persistence design is approved. See `docs/DECISIONS.md`. Authentication, saving an exploration, and the previous-explorations library are implemented. Rename and delete are not built.
 
 ## Product idea
-Curitopia helps people keep asking questions, move beyond their first thought, and see where their thinking leads. Accounts, saved explorations, and the library are already in the application. People can sign in, keep explorations, prioritise questions, and return to them later.
+Curitopia helps people keep asking questions, move beyond their first thought, and see where their thinking leads. The longer aim is to support independent thought, curiosity, and learning through investigation, and to make it easier to find a conversation or a goal in common with someone else. That is an aspiration. The product does not claim to reduce loneliness or polarisation, and those outcomes are not measured here.
+
+Accounts, saved explorations, and the library are already in the application. People can sign in, keep explorations, prioritise questions, and return to them later. Sharing a selection of that work is a later proposal, `docs/STORIES_SPEC.md`. It is not built.
 
 ## Core principle
 **Ask more questions. Suspend judgement. Discover what comes next.**
@@ -56,11 +58,13 @@ Reflection on one saved exploration is implemented. See `docs/AI_BEHAVIOUR.md` a
 
 Still proposed: cross-session curiosity patterns and interpretation feedback. A recurring interest may later inspire a new exploration. The user would choose whether to pursue it. That path is not built.
 
-A user-authored Experiment workspace is specified in `docs/EXPERIMENT_SPEC.md` and D-022. Phase 1 opens one experiment from a prioritised question. Phase 2 adds, edits, and deletes optional concepts, notes, hypotheses, tests, observations, and discoveries. Neither calls a model. The hosted SQL has not been applied. Concept thumbnails and a concept map are not built. AI suggestions remain deferred. Reflection does not start an experiment.
+A user-authored Experiment workspace is specified in `docs/EXPERIMENT_SPEC.md` and D-022. Phase 1 opens one experiment from a prioritised question. Phase 2 adds, edits, and deletes optional concepts, notes, hypotheses, tests, observations, and discoveries. Neither item editing nor opening an experiment calls a model. Any experiment item may have one thumbnail, including an image generated from a prompt the person submits. The SQL that allows that image on every item type has not been applied. A concept map is not built. AI suggestions remain deferred. Reflection does not start an experiment.
+
+Curitopia Stories, in `docs/STORIES_SPEC.md` and D-025, lets the owner select, arrange, and review a temporary draft from one exploration, then download one silent MP4. It does not post anything, and it does not add music or narration.
 
 ## Non-goals
 - A clinical or therapeutic tool, or claims of guaranteed stress relief.
-- Social sharing, collaboration, public profiles, achievements, leaderboards, subscriptions, or social login.
+- A social network inside Curitopia: public profiles, followers, likes, a public story feed, collaboration, achievements, leaderboards, subscriptions, or social login. Optional download of a reviewed story is proposed in `docs/STORIES_SPEC.md` and is not built. Posting that story to another service is outside the product unless a later decision adds it.
 - AI-generated content, semantic analysis, or AI summaries inside Quickfire or Focus capture. Reflection and an optional focus image are separate confirmed actions. The Experiment workspace is user-authored. Phase 1 does not add a model call.
 - A complex graph editor or full project-management system.
 - Mandatory categorisation of questions.
@@ -68,4 +72,4 @@ A user-authored Experiment workspace is specified in `docs/EXPERIMENT_SPEC.md` a
 
 ## Product language
 Prefer: explore, question, wander, investigate, connect, reflect.
-Avoid: creativity score, intelligence score, diagnosis, guaranteed stress relief, or claims that the app can exhaust or reset a specific brain system.
+Avoid: creativity score, intelligence score, diagnosis, guaranteed stress relief, claims that the app can exhaust or reset a specific brain system, or claims that it will end loneliness or polarisation.

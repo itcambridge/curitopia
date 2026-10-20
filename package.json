@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --import ./test/register.mjs --test test/reflection-validate.test.ts test/reflection-consent.test.ts test/reflection-route.test.ts test/reflection-openai.test.ts test/exploration-continuation.test.ts test/reflection-freshness.test.ts test/focus-image.test.ts test/experiment-open.test.ts test/map-layout.test.ts test/experiment-items.test.ts test/constellation.test.ts"
+    "test": "node --experimental-strip-types --import ./test/register.mjs --test test/reflection-validate.test.ts test/reflection-consent.test.ts test/reflection-route.test.ts test/reflection-openai.test.ts test/exploration-continuation.test.ts test/reflection-freshness.test.ts test/focus-image.test.ts test/experiment-open.test.ts test/map-layout.test.ts test/experiment-items.test.ts test/constellation.test.ts test/thumbnail.test.ts test/story.test.ts test/story-image.test.ts test/story-export.test.ts test/story-video.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -18,6 +18,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
+    "mediabunny": "^1.61.6",
     "next": "16.4.0",
     "openai": "^7.32.0",
     "react": "^19",

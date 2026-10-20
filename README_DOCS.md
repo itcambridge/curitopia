@@ -13,7 +13,8 @@
 - `docs/QUESTION_MAP_SPEC.md` — orbital visualisation, drawn from visible questions.
 - `docs/AI_BEHAVIOUR.md` — reflection behaviour for one saved exploration, plus the boundary around later AI.
 - `docs/REFLECTION_SPEC.md` — reflection experience. The single-exploration slice is implemented. The wider pattern proposal is not authorisation to build it.
-- `docs/EXPERIMENT_SPEC.md` — user-authored Experiment workspace. Phase 1 is in the application. Hosted SQL is not applied. Item editing, thumbnails, and AI are later.
+- `docs/EXPERIMENT_SPEC.md` — user-authored Experiment workspace. Phases 1 and 2 are in the application. The hosted experiment SQL has not been applied. Phase 3 thumbnails are in the application for concepts. The SQL that allows a thumbnail on every item type has not been applied.
+- `docs/STORIES_SPEC.md` — Curitopia Stories. Select, arrange, review, artwork, and a silent MP4 download are in the application. D-025.
 - `docs/TEST_STRATEGY.md` — type checking, production builds, database checks, and what has actually been verified.
 - `docs/DECISIONS.md` — architectural decisions, including superseded and proposed entries.
 
@@ -27,7 +28,7 @@
 - Questions can be hidden and restored with `is_hidden`. Hidden questions stay stored and leave the normal map, list, and visible counts. The central question and the last visible question cannot be hidden.
 - Saving reports Saving, Saved, or Could not save. A rejected hide puts the question back to the stored visible state.
 - Rename and delete are specified and not built.
-- AI reflection on one saved exploration is implemented. It does not require completion. It sends visible questions to OpenAI only after confirmation and does not store the result. Cross-session patterns are still proposed. Phases 1 and 2 of the Experiment workspace open one experiment and let the owner add, edit, and delete items. They do not call a model. The hosted experiment SQL has not been applied. Thumbnails, a concept map, and AI suggestions are not built.
+- AI reflection on one saved exploration is implemented. It does not require completion. It sends visible questions to OpenAI only after confirmation and does not store the result. Cross-session patterns are still proposed. Phases 1 and 2 of the Experiment workspace open one experiment and let the owner add, edit, and delete items. They do not call a model. The hosted experiment SQL has not been applied. Concept thumbnails are in the application. The SQL that allows a thumbnail on every item type has not been applied. A concept map and AI experiment suggestions are not built. Curitopia Stories can be selected, arranged, illustrated, and downloaded as one silent MP4 from the browser.
 
 The earlier in-memory prototype is history, recorded as D-005. Do not describe the running workspace as memory-only.
 
@@ -53,7 +54,7 @@ See `docs/TEST_STRATEGY.md` for the full list. In short:
 
 ## Approved architecture
 
-Documented in `docs/DECISIONS.md`, D-007 through D-016. D-019 approves reflection of one saved exploration, and D-020 keeps that exploration editable. D-017 and D-018 still propose the wider reflection behaviour and do not approve cross-session profiling. D-022 agrees the Experiment product direction and does not approve implementation.
+Documented in `docs/DECISIONS.md`, D-007 through D-016. D-019 approves reflection of one saved exploration, and D-020 keeps that exploration editable. D-017 and D-018 still propose the wider reflection behaviour and do not approve cross-session profiling. D-022 agrees the Experiment product direction. Phases 1 and 2 are in the application. D-025 approves the Stories first release. The workflow, artwork, and silent MP4 download are in the application.
 
 - Application: Next.js, React, and TypeScript.
 - Intended production host: Linode at `https://curitopia.com`.
@@ -74,3 +75,4 @@ Remaining product work, in an order that keeps each step reviewable:
 2. Rename and confirmed deletion, when that task is requested.
 3. Phase 3 of the Experiment workspace: concept thumbnails, after the image limits are measured. Phases 1 and 2 are already in the application. AI suggestions are not part of phase 3.
 4. Cross-session curiosity patterns, only after that proposal is approved as its own task.
+5. Curitopia Stories image generation and download, only when that task is requested. Phase 1 of the workflow is already in the application.

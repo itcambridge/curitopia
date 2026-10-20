@@ -64,3 +64,16 @@ The question store already keeps text, order, role, priority, perspective origin
 
 ## Focus image generation
 Focus image generation is a separate confirmed action. The server calls the OpenAI Image API only after the person chooses Generate. The request contains the prompt they submitted. It does not include the question list, hidden questions, a reflection, or account metadata. `OPENAI_IMAGE_MODEL` selects the image model and defaults to `gpt-image-2.5-flare`. `OPENAI_MODEL` is not used for images. An uploaded image is not sent to OpenAI. The image file, once the person chooses Use image, is stored for that exploration. The prompt is not stored.
+
+## Stories, not part of reflection
+Curitopia Stories does not change this reflection. Artwork, when requested, is a confirmed image call. Exporting the silent MP4 does not call a model. D-025.
+
+If a later task adds story images or short subtitles, these limits apply. They are not a licence to call a model now.
+
+- A request runs only after the person confirms, and only for content they selected for that story. The screen says that the selected text or prompt goes to an external provider and that the call can cost API credit.
+- The call does not include the rest of the exploration, hidden questions, unselected items, or account data. The browser does not receive the API key.
+- A suggested subtitle is a suggestion. It is not the person's question and it is not a fact. The person can edit it.
+- A generated picture is illustration. It is not shown as a photograph of a real test or event.
+- The person can regenerate, replace, or remove a story image before export, and reviews it before it is used. That action does not change a Focus Image or an experiment thumbnail. A 256-pixel thumbnail and a 1536 by 1024 Focus Image are not assumed to be a finished story slide.
+- The approved first release does not ask a model for the closing question. The person writes that question, if they want one. Slide images, when generated, use the existing OpenAI Image API. That choice does not mean the current image function already produces a suitable 9:16 slide. The bytes are not stored. Phase 2 generates one slide image after confirmation and returns it to the browser. It does not store the file.
+- Reflection's request stays the visible questions of one exploration and the suggestions described above. Do not add story slides, music, or a second provider to it.

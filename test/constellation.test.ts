@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { layoutConstellation, sphereLines, spherePreview, type ConstellationItem } from '@/lib/experiments/constellation'
+import { constellationStageSide, layoutConstellation, renderedCircle, sphereLines, spherePreview, type ConstellationItem } from '@/lib/experiments/constellation'
 import { mapCoordinate } from '@/lib/explorations/map-layout'
 
 function item(id: string, position: number, relatedItemId: string | null = null): ConstellationItem {
@@ -30,10 +30,69 @@ test('the same items keep the same places', () => {
   for (const node of first.nodes) {
     assert.equal(node.x, mapCoordinate(node.x))
     assert.equal(node.y, mapCoordinate(node.y))
-    assert.equal(node.radius >= 7, true)
+    assert.equal(node.radius >= 6, true)
+    assert.equal(node.radius < first.centre.radius, true)
   }
   separated(first)
-  separated(layoutConstellation(Array.from({ length: 28 }, (_, index) => item(`many-${index}`, index))))
+})
+
+test('growing experiments stay apart and inside the canvas', () => {
+  for (const count of [0, 1, 6, 8, 12, 20, 30]) {
+    const layout = layoutConstellation(Array.from({ length: count }, (_, index) => item(`n-${index}`, index)))
+    separated(layout)
+    const circles = [layout.centre, ...layout.nodes]
+    for (let i = 0; i < circles.length; i += 1) {
+      for (let j = i + 1; j < circles.length; j += 1) {
+        const distance = Math.hypot(circles[i].x - circles[j].x, circles[i].y - circles[j].y)
+        assert.equal(distance + 0.05 >= circles[i].radius + circles[j].radius + 3, true, `${count} gap`)
+      }
+    }
+    for (const circle of circles) {
+      assert.equal(circle.x - circle.radius >= -0.05, true, `${count} left`)
+      assert.equal(circle.x + circle.radius <= layout.size + 0.05, true, `${count} right`)
+      assert.equal(circle.y - circle.radius >= -0.05, true, `${count} top`)
+      assert.equal(circle.y + circle.radius <= layout.size + 0.05, true, `${count} bottom`)
+    }
+    if (count > 8) assert.equal(layout.nodes.some(node => node.orbit > 1), true)
+  }
+
+  const placed = (count: number) => layoutConstellation(Array.from({ length: count }, (_, index) => item(`keep-${index}`, index)))
+  const around = (layout: ReturnType<typeof layoutConstellation>, orbit: number) => layout.nodes
+    .filter(node => node.orbit === orbit)
+    .map(node => [node.id, mapCoordinate(node.x - layout.centre.x), mapCoordinate(node.y - layout.centre.y), node.radius])
+  const six = placed(6)
+  const seven = placed(7)
+  assert.equal(seven.nodes.some(node => node.orbit > 1), true)
+  assert.deepEqual(around(seven, 1), around(six, 1))
+  const twelve = placed(12)
+  const thirteen = placed(13)
+  assert.deepEqual(around(thirteen, 1), around(twelve, 1))
+
+  for (const [width, height] of [[1400, 760], [390, 700], [1100, 500], [1920, 900]]) {
+    const header = 148
+    const canvasHeight = Math.max(0, height - header)
+    const side = constellationStageSide(width, canvasHeight)
+    assert.equal(side > 0 && side <= width && side <= canvasHeight, true)
+    for (const count of [6, 12, 20, 30]) {
+      const layout = layoutConstellation(Array.from({ length: count }, (_, index) => item(`fit-${count}-${index}`, index)))
+      const circles = [layout.centre, ...layout.nodes].map(circle => renderedCircle(circle, layout.size, side))
+      let top = side
+      for (const circle of circles) {
+        assert.equal(circle.cy - circle.radius >= -0.5, true)
+        assert.equal(circle.cy + circle.radius <= side + 0.5, true)
+        assert.equal(circle.cx - circle.radius >= -0.5, true)
+        assert.equal(circle.cx + circle.radius <= side + 0.5, true)
+        top = Math.min(top, circle.cy - circle.radius)
+      }
+      assert.equal(top >= side * 0.04, true, `${count} heading clearance`)
+      for (let i = 0; i < circles.length; i += 1) {
+        for (let j = i + 1; j < circles.length; j += 1) {
+          const distance = Math.hypot(circles[i].cx - circles[j].cx, circles[i].cy - circles[j].cy)
+          assert.equal(distance >= circles[i].radius + circles[j].radius + side * 0.02, true, `${width}x${height} ${count}`)
+        }
+      }
+    }
+  }
 })
 
 test('a line is drawn only for an explicit relationship', () => {
@@ -98,7 +157,8 @@ test('the constellation and the list use one editor', () => {
   assert.match(screen, /> Map</)
   assert.match(screen, /> List</)
   assert.match(screen, /role="dialog"/)
-  assert.match(screen, /None is required/)
+  assert.match(screen, /Explore the ideas behind your question/)
+  assert.match(screen, /If a test would change a live system/)
   assert.match(screen, /layoutConstellation/)
   assert.match(screen, /id="experiment-question"[\s\S]*experiment\.questionText/)
   assert.match(screen, /sphereLines\(experiment\.questionText/)
@@ -114,4 +174,20 @@ test('the constellation and the list use one editor', () => {
   assert.equal(preview.includes('overflow-wrap:anywhere'), false)
   assert.match(spheres, /padding:0/)
   assert.equal(spheres.includes('padding:16%'), false)
+  assert.match(screen, /constellation-fit/)
+  assert.match(screen, /node\.radius \* 2 \/ layout\.size/)
+  assert.match(screen, /node\.x \/ layout\.size/)
+  assert.match(screen, /node\.y \/ layout\.size/)
+  assert.match(css, /\.constellation-stage \{[^}]*position:relative/)
+  assert.match(css, /\.constellation-fit \{[^}]*width:min\(100cqw, 100cqh\)[^}]*height:min\(100cqw, 100cqh\)/)
+  assert.equal(css.includes('68cqh'), false)
+  assert.equal(css.includes('780px'), false)
+  assert.match(screen, /\/api\/explorations\/\$\{experiment\.explorationId\}\/focus-image/)
+  assert.match(screen, /setFocusHidden/)
+  assert.match(screen, /setFocusDimmed/)
+  assert.equal(screen.includes("'/focus-image', { method: 'POST'"), false)
+  const load = readFileSync(new URL('../lib/experiments/load.ts', import.meta.url), 'utf8')
+  assert.match(load, /select\('focus_image_path'\)/)
+  assert.equal(load.includes(".from('explorations').update"), false)
+  assert.equal(load.includes(".from('explorations').insert"), false)
 })

@@ -260,10 +260,8 @@ Email confirmation is an authentication rule for the later application work. The
 | No title | `explorations.title` |
 | No owner | `explorations.user_id` |
 
-## Proposed experiment store
-Not approved and not migrated. D-022 and `docs/EXPERIMENT_SPEC.md` are the source for this proposal. Do not add these tables as part of another change.
-
-An experiment would belong to the owner of one saved exploration and point at one question in it. Optional concepts, notes, hypotheses, tests, observations, and discoveries would be rows in `experiment_items`, not new columns on `questions`. The question text stays on `questions`. A concept thumbnail would be a private Storage object. `experiment_items.image_path` would store the path, not the bytes. That path is not `explorations.focus_image_path`, and the file would not use the `exploration-images` bucket.
+## Experiment store
+D-022 approves `experiments` and `experiment_items`. The migration is written and has not been applied to the hosted project. D-023 adds `experiment_items.image_path` in a later migration, which has been applied. D-024 lets any of the six item types store that path. Its SQL, `supabase/migrations/20261017172000_allow_thumbnails_on_all_experiment_items.sql`, has not been applied. The question text stays on `questions`. An item thumbnail is a private Storage object in `experiment-thumbnails`. The column stores the path `{user_id}/{experiment_id}/{item_id}/{file_id}.webp`, not the bytes. That path is not `explorations.focus_image_path`.
 
 ```mermaid
 erDiagram
@@ -273,3 +271,20 @@ erDiagram
 ```
 
 The approved diagram earlier in this file stays the running contract. This second diagram is only the proposal. Item colour and layout would be derived, as they are for questions. Coordinates would not be stored.
+
+## Stories store, unapproved
+D-025 and `docs/STORIES_SPEC.md` describe a possible later feature. No story table, slide table, or export bucket is approved, and none is in the migrations.
+
+The approved first release does not store a story. **Implementation pending.** The draft stays in the browser. A refresh or a closed tab can discard it. Do not add a table or a bucket for that release. A generated slide image is not given a database path.
+
+If a later task stores a draft, the sketch below is only a starting point. It is not a migration and it is not an instruction to change the hosted database.
+
+- A story belongs to one signed-in owner and one exploration. It does not replace that exploration.
+- Each slide records its order, its type, and the question id or experiment item id it came from, when it came from a saved row. A closing question the person writes for the story is story text, not a new `questions` row, unless they explicitly add it to the exploration.
+- A subtitle is story presentation. It is not written back to `question_text` or to an item body.
+- An image made for a slide is a story file. It is not `explorations.focus_image_path` and it is not `experiment_items.image_path`.
+- Creating, editing, reordering, or deleting a story does not update questions, priorities, hidden state, experiment items, or those existing images.
+- Hidden questions and unselected items are not rows in the story.
+- Ownership would use row-level security on any new table. That policy does not exist yet.
+
+Until that task is approved, the running contract has no story data.

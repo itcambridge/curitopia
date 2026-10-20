@@ -57,7 +57,7 @@ The hosted database does not have this column until `supabase/scripts/add_focus_
 ## Experiment (proposed)
 Not built. Product direction is agreed in D-022. Implementation waits for a later approval. The full proposal is `docs/EXPERIMENT_SPEC.md`.
 
-The owner of a saved exploration marks a question as important and chooses Investigate further. That opens one experiment for that question, with the question as the centre, at `/explorations/[id]/experiments/[experimentId]`. The question is a large sphere. Saved concepts, notes, hypotheses, tests, observations, and discoveries are smaller spheres around it, in saved order. A list shows the same items. Opening a sphere shows the full text, with edit and delete. Add thought creates any of the six kinds. None is required. A line is shown only when an item is explicitly related to another. A concept thumbnail is a later increment. The user does not have to drag anything.
+The owner of a saved exploration marks a question as important and chooses Investigate further. That opens one experiment for that question, with the question as the centre, at `/explorations/[id]/experiments/[experimentId]`. The question is a large sphere. The constellation uses most of the space under that heading. When the exploration has a Focus Image, the same image sits behind the experiment, dimmed, and Hide image or Dim image on this page does not change the exploration. Saved concepts, notes, hypotheses, tests, observations, and discoveries are smaller spheres around it, in saved order. A list shows the same items. Opening a sphere shows the full text, with edit and delete. Every saved item shows Add image, or Replace image and Remove image. Add thought creates any of the six kinds and shows those image controls for each type. None is required. A line is shown only when an item is explicitly related to another. A saved image covers that item's sphere. An item without an image keeps the text sphere. The user does not have to drag anything.
 
 Leaving the experiment returns to the same exploration. The exploration stays editable. Its questions, priorities, hidden state, mode, and `status` are unchanged. The library remains a list of explorations. The experiment is reopened from its question.
 
@@ -179,6 +179,20 @@ Signed-out visitors see registration, sign-in, and password reset. They do not s
 - Controls should be usable by keyboard and touch.
 - Do not let decorative elements obscure questions or input controls.
 - Confirmation actions are reachable by keyboard.
+
+## Curitopia Stories
+**Approved.** Select, arrange, and review are in the application from **Create a Story** on a saved exploration. Artwork is created for one slide after confirmation. **Download video (MP4)** saves one silent 9:16 video in the browser. D-025 and `docs/STORIES_SPEC.md`.
+
+From a saved exploration the owner would choose **Create a Story**, then:
+
+1. See questions and experiment items from that exploration offered for selection. Hidden questions are omitted. Nothing is included until the person selects it.
+2. Choose an opening question, any starred or other questions they want, and any concepts, hypotheses, tests, observations, or discoveries they want to show.
+3. Review a sequence of slides. Edit subtitles, replace images, and reorder slides. The full question stays on a question slide.
+4. Preview the slides as they will export.
+5. Download one 9:16 image file per slide. PDF is excluded. Download does not upload or publish the files. An optional Curitopia mark can be left off.
+6. Cancel or discard the draft at any point. The draft lives only in the browser, so a refresh or a closed tab can discard it. Discarding it does not change questions, priorities, experiment items, thumbnails, or the Focus Image.
+
+Hidden questions stay out, with no control to add them. A closing question, if any, is written by the person. The full question stays on a question slide. These limits are **Approved**. Phase 1 and Phase 2 are in the application. Download is not. The detail is `docs/STORIES_SPEC.md`.
 
 ## Session statistics
 Only show metrics that can be calculated from the open exploration. The workspace header shows the question count and the number of visual orbits. Do not display made-up counts such as "new directions", "longest chain", "furthest from start", or "time exploring" unless they are computed from explicit data and their meaning is documented.

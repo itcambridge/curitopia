@@ -69,7 +69,7 @@ begin
 end;
 $$;
 
-select plan(13);
+select plan(17);
 
 select tests.create_user('experiment_owner');
 select tests.create_user('experiment_other');
@@ -202,6 +202,45 @@ select lives_ok(
   $$,
   'the owner can change an item kind and its text'
 );
+
+select lives_ok(
+  $$
+    update public.experiment_items
+    set kind = 'note',
+        image_path = auth.uid()::text || '/30000000-0000-4000-8000-0000000000e1/40000000-0000-4000-8000-0000000000e2/50000000-0000-4000-8000-0000000000e5.webp'
+    where id = '40000000-0000-4000-8000-0000000000e2'::uuid
+  $$,
+  'any item type can store a thumbnail path for itself'
+);
+
+select lives_ok(
+  $$
+    update public.experiment_items
+    set kind = 'observation'
+    where id = '40000000-0000-4000-8000-0000000000e2'::uuid
+  $$,
+  'a thumbnail can stay when the item type changes'
+);
+
+select throws_ok(
+  $$
+    update public.experiment_items
+    set image_path = auth.uid()::text || '/30000000-0000-4000-8000-0000000000e1/40000000-0000-4000-8000-0000000000e9/50000000-0000-4000-8000-0000000000e5.webp'
+    where id = '40000000-0000-4000-8000-0000000000e2'::uuid
+  $$,
+  '23514',
+  'a thumbnail path must name this item'
+);
+
+select tests.authenticate_as('experiment_other');
+
+select is(
+  (select count(*) from public.experiment_items),
+  0::bigint,
+  'another account cannot read a concept thumbnail'
+);
+
+select tests.authenticate_as('experiment_owner');
 
 select lives_ok(
   $$

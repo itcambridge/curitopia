@@ -82,7 +82,7 @@ function readWebp(bytes: Uint8Array): InspectedImage | null {
 }
 
 /** Accepts a JPEG, PNG, or WebP by its contents. A matching file extension is not enough. */
-export function inspectImage(bytes: Uint8Array): InspectedImage | null {
-  if (bytes.byteLength < 16 || bytes.byteLength > FOCUS_IMAGE_MAX_BYTES) return null
+export function inspectImage(bytes: Uint8Array, maxBytes = FOCUS_IMAGE_MAX_BYTES): InspectedImage | null {
+  if (bytes.byteLength < 16 || bytes.byteLength > maxBytes) return null
   return readPng(bytes) ?? readJpeg(bytes) ?? readWebp(bytes)
 }

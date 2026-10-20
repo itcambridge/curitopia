@@ -31,21 +31,37 @@ export type ConstellationLayout = {
   links: ConstellationLink[]
 }
 
-const ITEM_RADIUS = 10
-const CENTRE_RADIUS = 15
-const GAP = 4.5
+// Satellites stay one size. A larger experiment adds a ring instead of
+// shrinking every sphere until they fit on the first orbit.
+const ITEM_RADIUS = 8.6
 
-// How many spheres fit on this ring with a clear gap between their edges.
-// The check uses the chord, which is the real distance between neighbours.
-function ringCapacity(ringR: number) {
-  const needed = 2 * ITEM_RADIUS + GAP
+// How many spheres fit on this ring. The chord is the distance between
+// neighbouring centres, so the check includes both diameters and the gap.
+function ringCapacity(ringR: number, itemRadius: number, gap: number) {
+  const needed = 2 * itemRadius + gap
   let count = 1
-  while (count < 48) {
+  while (count < 36) {
     const chord = 2 * ringR * Math.sin(Math.PI / (count + 1))
-    if (chord < needed) break
+    if (chord + 1e-6 < needed) break
     count += 1
   }
   return count
+}
+
+/** Largest square that fits the canvas left after the experiment heading. */
+export function constellationStageSide(canvasWidth: number, canvasHeight: number) {
+  if (!Number.isFinite(canvasWidth) || !Number.isFinite(canvasHeight) || canvasWidth <= 0 || canvasHeight <= 0) return 0
+  return Math.min(canvasWidth, canvasHeight)
+}
+
+// The same percentages the stage uses for left, top, and width. Width and
+// position share one square, so the rendered gap matches this layout.
+export function renderedCircle(circle: { x: number; y: number; radius: number }, layoutSize: number, stageSide: number) {
+  return {
+    cx: (circle.x / layoutSize) * stageSide,
+    cy: (circle.y / layoutSize) * stageSide,
+    radius: (circle.radius / layoutSize) * stageSide,
+  }
 }
 
 // Items on one ring are spaced evenly in saved order. The first step is
@@ -54,25 +70,28 @@ function ringCapacity(ringR: number) {
 // so a refresh or a small edit leaves the spheres in place.
 export function layoutConstellation(items: readonly ConstellationItem[]): ConstellationLayout {
   const sorted = [...items].sort((a, b) => a.position - b.position || a.id.localeCompare(b.id))
+  const itemRadius = ITEM_RADIUS
+  const centreRadius = itemRadius * 1.22
+  const gap = Math.max(4, itemRadius * 0.62)
   const assigned: { id: string; orbit: number; ringR: number; indexInRing: number; capacity: number }[] = []
   let orbit = 1
-  let ringR = CENTRE_RADIUS + ITEM_RADIUS + GAP
+  let ringR = centreRadius + itemRadius + gap
   let placedInRing = 0
-  let capacity = ringCapacity(ringR)
+  let capacity = ringCapacity(ringR, itemRadius, gap)
 
   for (const item of sorted) {
     if (placedInRing >= capacity) {
       orbit += 1
-      ringR += 2 * ITEM_RADIUS + GAP
-      capacity = ringCapacity(ringR)
+      ringR += 2 * itemRadius + gap
+      capacity = ringCapacity(ringR, itemRadius, gap)
       placedInRing = 0
     }
     assigned.push({ id: item.id, orbit, ringR, indexInRing: placedInRing, capacity })
     placedInRing += 1
   }
 
-  const maxExtent = assigned.reduce((max, item) => Math.max(max, item.ringR + ITEM_RADIUS), CENTRE_RADIUS)
-  const size = Math.max(100, Math.ceil((maxExtent + 6) * 2))
+  const maxExtent = assigned.reduce((max, item) => Math.max(max, item.ringR + itemRadius), centreRadius)
+  const size = Math.ceil((maxExtent + 6) * 2)
   const centre = size / 2
   const onOrbit = new Map<number, number>()
   for (const item of assigned) onOrbit.set(item.orbit, (onOrbit.get(item.orbit) ?? 0) + 1)
@@ -83,7 +102,7 @@ export function layoutConstellation(items: readonly ConstellationItem[]): Conste
       id: item.id,
       x: mapCoordinate(centre + Math.cos(angle) * item.ringR),
       y: mapCoordinate(centre + Math.sin(angle) * item.ringR),
-      radius: ITEM_RADIUS,
+      radius: itemRadius,
       orbit: item.orbit,
     }
   })
@@ -109,7 +128,7 @@ export function layoutConstellation(items: readonly ConstellationItem[]): Conste
 
   return {
     size,
-    centre: { x: mapCoordinate(centre), y: mapCoordinate(centre), radius: CENTRE_RADIUS },
+    centre: { x: mapCoordinate(centre), y: mapCoordinate(centre), radius: centreRadius },
     nodes,
     rings: [...new Set(assigned.map(item => mapCoordinate(item.ringR, 1)))],
     links,
