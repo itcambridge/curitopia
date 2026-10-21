@@ -210,6 +210,7 @@ export default function ExperimentScreen({ experiment }: { experiment: LoadedExp
             {showFocusImage ? <button type="button" className="focus-image-button" aria-pressed={focusDimmed} onClick={() => setFocusDimmed(current => !current)}>{focusDimmed ? 'Less dim' : 'Dim image'}</button> : null}
           </div>
         ) : null}
+        <a className="library-link story-entry" href={`/explorations/${experiment.explorationId}/story`}>Create a Story</a>
         <button type="button" className="add-button experiment-add" disabled={busy} onClick={openAdd}>+ Add thought</button>
         {message && panel === null ? <p className={saveState === 'error' ? 'composer-error' : 'experiment-status'} role={saveState === 'error' ? 'alert' : 'status'}>{message}</p> : null}
         {saveState === 'saving' && panel === null ? <p className="experiment-status" role="status">Saving</p> : null}

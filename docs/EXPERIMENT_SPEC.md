@@ -43,7 +43,7 @@ The experiment stores the exploration id and the question id. The question text 
 The selected question is the centre of the experiment. User-created concepts are optional branches around that centre. Notes and the other building blocks can sit on the centre or on a concept.
 
 ### Entering
-From a saved exploration, the owner marks a question as important and chooses **Investigate further**. That label is not the Focus starter named Investigate.
+From a saved exploration, the owner marks a question as important and chooses the experiment icon. Its accessible name is **Investigate further**. That control is not the Focus starter named Investigate.
 
 The first time, that action creates the experiment. Opening it again loads the same experiment. There is one experiment for each question. A question that is no longer prioritised can still reopen its experiment. A question that was never prioritised, and has no experiment, does not start one.
 
@@ -253,7 +253,7 @@ Approved on 2026-10-16, to be built in three increments. AI stays out of all thr
 
 1. Implement the phase, starting with a usable workspace that does not call a model.
 2. One experiment per question. Several concepts and tests can live inside it.
-3. The control label is "Investigate further".
+3. The control is a flask icon. Its accessible name is "Investigate further".
 4. Two tables, `experiments` and `experiment_items`. No general-purpose graph.
 5. `experiments.user_id` is stored and used for ownership and row-level security.
 6. Each item's `body` is at most 2,000 trimmed characters. The limit is per item. The experiment as a whole can hold many items.

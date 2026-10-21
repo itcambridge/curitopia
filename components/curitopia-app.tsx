@@ -25,7 +25,7 @@ const starterQuestions: Question[] = [
 const palette = ['#56b9ff', '#b36cff', '#78edc5', '#ed7fbd', '#ffb347']
 
 function Logo() {
-  return <div className="brand"><div className="brand-mark" aria-hidden="true"><span /><span /><span /></div><div><strong>curitopia</strong><small>Keep asking. Go further.</small></div></div>
+  return <div className="brand"><div className="brand-mark" aria-hidden="true"><span /><span /><span /></div><div><strong>curitopia</strong><small>Ask. Experiment. Create.</small></div></div>
 }
 
 function QuestionMap({ questions, selected, onSelect }: { questions: Question[]; selected: number; onSelect: (id: number) => void }) {
@@ -57,7 +57,7 @@ export default function CuritopiaApp() {
       <div className="connection-card"><Sparkles size={26} /><div><strong>You're making<br />connections.</strong><span>Your thinking is expanding<br />in new directions.</span></div></div>
       <button className="end-button" onClick={() => setEnded(v => !v)}><BarChart3 size={19} /> {ended ? 'Continue exploring' : 'End session & explore'}</button>
     </aside>
-    <section className="workspace"><header className="workspace-header"><div className="mode-toggle" role="tablist" aria-label="Question mode"><button className={mode === 'focus' ? 'selected' : ''} onClick={() => setMode('focus')}><Compass size={17} /> Focus</button><button className={mode === 'quickfire' ? 'selected' : ''} onClick={() => setMode('quickfire')}><Timer size={17} /> Quickfire</button></div><div className="session-badge">{ended ? 'Session map' : mode === 'focus' ? 'Focus mode' : 'Quickfire mode'} <span /></div></header><div className="map-stage"><QuestionMap questions={visibleQuestions} selected={selected} onSelect={setSelected} /></div><div className="mobile-prompt">{selected > 1 ? <span>Exploring: <b>{questions.find(q => q.id === selected)?.text}</b></span> : <span>Keep asking. Go further.</span>}</div></section>
+    <section className="workspace"><header className="workspace-header"><div className="mode-toggle" role="tablist" aria-label="Question mode"><button className={mode === 'focus' ? 'selected' : ''} onClick={() => setMode('focus')}><Compass size={17} /> Focus</button><button className={mode === 'quickfire' ? 'selected' : ''} onClick={() => setMode('quickfire')}><Timer size={17} /> Quickfire</button></div><div className="session-badge">{ended ? 'Session map' : mode === 'focus' ? 'Focus mode' : 'Quickfire mode'} <span /></div></header><div className="map-stage"><QuestionMap questions={visibleQuestions} selected={selected} onSelect={setSelected} /></div><div className="mobile-prompt">{selected > 1 ? <span>Exploring: <b>{questions.find(q => q.id === selected)?.text}</b></span> : <span>Ask. Experiment. Create.</span>}</div></section>
   </main>
 }
 

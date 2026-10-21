@@ -6,8 +6,8 @@ The shell, Quickfire, Focus, map, review, and prioritisation behaviours below re
 ## Current shell
 Preserve the v0-generated dark navy interface:
 
-- Left sidebar for creating questions: Curitopia identity, All explorations, Sign out, the Map and List switch, mode selector, question input, and the optional Focus perspective starters.
-- Centre canvas for the exploration: a compact title and summary, the Hide review control, the orbital question map, and the Focus Image controls beside the live status at the lower left. A configured Focus Image sits behind the map.
+- Left sidebar for creating questions: Curitopia identity, home and sign-out icons, the Map and List switch, mode selector, question input, and the optional Flip perspective starters.
+- Centre canvas for the exploration: a compact title and summary, and the orbital question map. Review hides from a compact control beside Close in the review header. While it is hidden, Show review sits with the sidebar navigation. Focus image, Hide image, and Dim image sit under the sidebar controls. A configured Focus Image sits behind the map.
 - Right sidebar for review: the selected question, hidden questions, the question list and priority controls, and AI reflection. It scrolls on its own and can be collapsed. Below 1180px it opens as a drawer so the map is not squeezed between three columns.
 - A timeline view is not shown until one exists.
 - Review stays available while the exploration is still being edited.
@@ -29,7 +29,7 @@ This is what the signed-in screens do:
 A signed-in confirmed user has many explorations. Each saved exploration remains editable. An unsaved empty workspace is local only. The database may still store `status` as `active` or `completed` for older rows. That value does not lock the workspace.
 
 1. **Start.** New exploration opens the existing workspace in Focus with an empty question list and an empty composer. It does not copy the sample questions, and it does not insert a database row.
-2. **Capture.** The user adds questions. The mode switch remains available and does not delete questions. Focus starters remain optional. The composer accepts a question only when the trimmed text is from 1 to 2,000 characters.
+2. **Capture.** The user adds questions. The mode switch remains available and does not delete questions. Focus starters remain optional. The composer accepts a question only when the trimmed text is from 1 to 2,000 characters. A new question is saved with one question mark at the end. An existing question is not rewritten.
 3. **Save.** The first accepted question creates the exploration and that question in one save. A title entered before that save is included. Later accepted questions, mode changes, priority changes, and hide or restore update that exploration. The screen shows a quiet status: Saving, Saved, or Could not save. Quickfire does not show a dialog after a question. Rename is specified below and is not built.
 4. **Leave.** All explorations returns to the library without completing, resetting, or locking the open exploration. Closing or signing out before the first successful save leaves the library unchanged. After a successful save, the exploration remains in the library.
 5. **Review.** The workspace shows the map, list, full text, counts, and priority controls while questions can still be added. Priority changes are saved.
@@ -181,9 +181,9 @@ Signed-out visitors see registration, sign-in, and password reset. They do not s
 - Confirmation actions are reachable by keyboard.
 
 ## Curitopia Stories
-**Approved.** Select, arrange, and review are in the application from **Create a Story** on a saved exploration. Artwork is created for one slide after confirmation. **Download video (MP4)** saves one silent 9:16 video in the browser. D-025 and `docs/STORIES_SPEC.md`.
+**Approved.** Select, arrange, and review are in the application from **Create a Story** on the experiment for a saved exploration. Artwork is created for one slide after confirmation. **Download video (MP4)** saves one silent 9:16 video in the browser. D-025 and `docs/STORIES_SPEC.md`.
 
-From a saved exploration the owner would choose **Create a Story**, then:
+From that experiment the owner chooses **Create a Story** for the parent exploration, then:
 
 1. See questions and experiment items from that exploration offered for selection. Hidden questions are omitted. Nothing is included until the person selects it.
 2. Choose an opening question, any starred or other questions they want, and any concepts, hypotheses, tests, observations, or discoveries they want to show.

@@ -38,7 +38,7 @@ The first version starts from one saved exploration the signed-in owner already 
 
 Proposed journey:
 
-1. From that exploration, the person chooses **Create a Story**.
+1. From the experiment for that exploration, the person chooses **Create a Story**. The story still belongs to the parent exploration.
 2. Curitopia offers content from that exploration that is relevant and available to select. Hidden questions are omitted from this offer. Experiment items are listed only so the person can choose them. Nothing is pre-selected as "share this" without a deliberate choice. A sensible starting offer may highlight the central question and prioritised questions, still unchecked until the person includes them.
 3. The person chooses which questions, concepts, and other experiment items to include. Not every question has to be included. A story does not have to use every slide type below.
 4. Curitopia prepares a sequence of slides from that selection.
@@ -186,7 +186,7 @@ The journey is **Create a Story**, then select content, arrange slides, review, 
 
 Include:
 
-- **Create a Story** on one existing exploration.
+- **Create a Story** on the experiment for one existing exploration. The draft still uses that exploration.
 - An explicit selection of visible questions, including prioritised ones, and of experiment items the person wants to show. Hidden questions are not offered and cannot be added.
 - A closing question only when the person writes one. No suggested closing question.
 - Image slides with a short subtitle the person can edit. The full question stays on the slide, and the subtitle does not replace it.

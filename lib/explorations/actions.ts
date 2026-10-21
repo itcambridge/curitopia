@@ -1,5 +1,6 @@
 'use server'
 
+import { questionWithMark } from '@/lib/explorations/question-text'
 import type { DatabaseMode, PerspectiveOrigin, QuestionRole, SaveResult } from '@/lib/explorations/types'
 import { createClient } from '@/lib/supabase/server'
 
@@ -13,7 +14,7 @@ function isUuid(value: string) {
 }
 
 function questionText(value: string) {
-  const text = value.trim()
+  const text = questionWithMark(value)
   if (text.length < 1 || text.length > 2000) return null
   return text
 }

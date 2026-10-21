@@ -18,7 +18,7 @@ export function AuthCard({
           </div>
           <div>
             <div className="brand-name">curitopia</div>
-            <div className="tagline">Keep asking. Go further.</div>
+            <div className="tagline">Ask. Experiment. Create.</div>
           </div>
         </header>
         <h1>{title}</h1>

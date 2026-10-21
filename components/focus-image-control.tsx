@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { Eye, EyeOff, Image as ImageIcon, RotateCcw, Sun, SunDim } from 'lucide-react'
 import { maySubmitFocusPrompt, suggestedFocusPrompt } from '@/lib/focus-image/prompt'
 
 type Phase = 'closed' | 'edit' | 'working' | 'preview' | 'error'
@@ -203,10 +204,6 @@ export default function FocusImageControl({
 
   return (
     <div className="focus-image-control">
-      <button type="button" className="focus-image-button" disabled={!ready || phase === 'working'} onClick={() => phase === 'closed' ? openPanel() : closePanel()}>Focus image</button>
-      {hasImage ? <button type="button" className="focus-image-button" onClick={onToggleHidden}>{hidden ? 'Show image' : 'Hide image'}</button> : null}
-      {hasImage && !hidden ? <button type="button" className="focus-image-button" aria-pressed={dimmed} onClick={onToggleDimmed}>{dimmed ? 'Less dim' : 'Dim image'}</button> : null}
-      {broken && hasImage ? <button type="button" className="focus-image-button" onClick={onRetryImage}>Try loading the image again</button> : null}
       {phase !== 'closed' ? (
         <div className="focus-image-panel" role="dialog" aria-labelledby="focus-image-title">
           <h2 id="focus-image-title">Focus image</h2>
@@ -236,6 +233,12 @@ export default function FocusImageControl({
           ) : null}
         </div>
       ) : null}
+      <div className="focus-image-actions" role="group" aria-label="Focus image">
+        <button type="button" className="focus-image-button" disabled={!ready || phase === 'working'} aria-expanded={phase !== 'closed'} aria-label="Focus image" title="Focus image" onClick={() => phase === 'closed' ? openPanel() : closePanel()}><ImageIcon size={18} aria-hidden="true" /></button>
+        {hasImage ? <button type="button" className="focus-image-button" aria-pressed={hidden} aria-label={hidden ? 'Show image' : 'Hide image'} title={hidden ? 'Show image' : 'Hide image'} onClick={onToggleHidden}>{hidden ? <Eye size={18} aria-hidden="true" /> : <EyeOff size={18} aria-hidden="true" />}</button> : null}
+        {hasImage && !hidden ? <button type="button" className="focus-image-button" aria-pressed={dimmed} aria-label={dimmed ? 'Less dim' : 'Dim image'} title={dimmed ? 'Less dim' : 'Dim image'} onClick={onToggleDimmed}>{dimmed ? <Sun size={18} aria-hidden="true" /> : <SunDim size={18} aria-hidden="true" />}</button> : null}
+        {broken && hasImage ? <button type="button" className="focus-image-button" aria-label="Try loading the image again" title="Try loading the image again" onClick={onRetryImage}><RotateCcw size={18} aria-hidden="true" /></button> : null}
+      </div>
     </div>
   )
 }

@@ -31,7 +31,7 @@ export default function ExplorationLibrary({
           <div className="brand-mark" aria-hidden="true"><img src="/logo-removebg-preview.png" alt="" /></div>
           <div>
             <div className="brand-name">curitopia</div>
-            <div className="tagline">Keep asking. Go further.</div>
+            <div className="tagline">Ask. Experiment. Create.</div>
           </div>
         </div>
         <form action={signOut}>

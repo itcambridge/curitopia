@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Curitopia — Keep asking. Go further.',
+  title: 'Curitopia — Ask. Experiment. Create.',
   description: 'A living universe for exploring your curiosity through questions.',
   generator: 'v0.app',
   icons: {
