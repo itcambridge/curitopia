@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, FlaskConical, Gem, Lightbulb, List, Map, Sparkles, StickyNote, type LucideIcon } from 'lucide-react'
+import { Eye, EyeOff, FlaskConical, Gem, Lightbulb, List, Map, Sparkles, StickyNote, Sun, SunDim, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import ConceptThumbnail, { storeConceptThumbnail } from '@/components/concept-thumbnail'
 import { deleteExperimentItem, saveExperimentItem } from '@/lib/experiments/actions'
@@ -194,27 +194,68 @@ export default function ExperimentScreen({ experiment }: { experiment: LoadedExp
     })
   }
 
+  const imageLabel = focusHidden || focusBroken ? 'Show image' : 'Hide image'
+  const dimLabel = focusDimmed ? 'Less dim' : 'Dim image'
+
   return (
-    <main className="experiment-constellation">
-      {showFocusImage ? <img className="focus-image" alt="" src={`/api/explorations/${experiment.explorationId}/focus-image?v=${focusVersion}`} onError={() => setFocusBroken(true)} /> : null}
-      {showFocusImage ? <div className={`focus-image-veil${focusDimmed ? ' dimmed' : ''}`} /> : null}
-      <header className="experiment-toolbar">
-        <a className="library-link" href={`/explorations/${experiment.explorationId}`}>Back to exploration</a>
-        <div className="map-tabs" role="tablist" aria-label="Experiment views">
-          <button type="button" role="tab" aria-selected={view === 'map'} className={view === 'map' ? 'selected' : ''} onClick={() => setView('map')}><Map size={17} aria-hidden="true" /> Map</button>
-          <button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'selected' : ''} onClick={() => setView('list')}><List size={17} aria-hidden="true" /> List</button>
+    <main className="experiment-shell">
+      <aside className="sidebar experiment-sidebar">
+        <header className="brand"><div className="brand-mark" aria-hidden="true"><img src="/logo-removebg-preview.png" alt="" /></div><div><div className="brand-name">curitopia</div><div className="tagline">Ask. Experiment. Create.</div></div></header>
+        <a className="library-link experiment-back" href={`/explorations/${experiment.explorationId}`}>Back to exploration</a>
+        <div className="sidebar-nav">
+          <div className="map-tabs" role="tablist" aria-label="Experiment views">
+            <button type="button" role="tab" aria-selected={view === 'map'} className={view === 'map' ? 'selected' : ''} onClick={() => setView('map')}><Map size={17} aria-hidden="true" /> Map</button>
+            <button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'selected' : ''} onClick={() => setView('list')}><List size={17} aria-hidden="true" /> List</button>
+          </div>
         </div>
         {experiment.hasFocusImage ? (
-          <div className="experiment-focus-tools">
-            <button type="button" className="focus-image-button" onClick={() => { if (focusBroken) { setFocusBroken(false); setFocusHidden(false); setFocusVersion(version => version + 1); return } setFocusHidden(current => !current) }}>{focusHidden || focusBroken ? 'Show image' : 'Hide image'}</button>
-            {showFocusImage ? <button type="button" className="focus-image-button" aria-pressed={focusDimmed} onClick={() => setFocusDimmed(current => !current)}>{focusDimmed ? 'Less dim' : 'Dim image'}</button> : null}
+          <div className="sidebar-image-tools">
+            <div className="focus-image-actions" role="group" aria-label="Focus image">
+              <button type="button" className="focus-image-button" aria-pressed={focusHidden} aria-label={imageLabel} title={imageLabel} onClick={() => { if (focusBroken) { setFocusBroken(false); setFocusHidden(false); setFocusVersion(version => version + 1); return } setFocusHidden(current => !current) }}>{focusHidden || focusBroken ? <Eye size={18} aria-hidden="true" /> : <EyeOff size={18} aria-hidden="true" />}</button>
+              {showFocusImage ? <button type="button" className="focus-image-button" aria-pressed={focusDimmed} aria-label={dimLabel} title={dimLabel} onClick={() => setFocusDimmed(current => !current)}>{focusDimmed ? <Sun size={18} aria-hidden="true" /> : <SunDim size={18} aria-hidden="true" />}</button> : null}
+            </div>
           </div>
         ) : null}
         <a className="library-link story-entry" href={`/explorations/${experiment.explorationId}/story`}>Create a Story</a>
         <button type="button" className="add-button experiment-add" disabled={busy} onClick={openAdd}>+ Add thought</button>
         {message && panel === null ? <p className={saveState === 'error' ? 'composer-error' : 'experiment-status'} role={saveState === 'error' ? 'alert' : 'status'}>{message}</p> : null}
         {saveState === 'saving' && panel === null ? <p className="experiment-status" role="status">Saving</p> : null}
-      </header>
+        {panel ? (
+          <section ref={panelRef} className="experiment-detail" aria-labelledby="experiment-detail-title">
+            <div className="experiment-detail-heading">
+              <h2 id="experiment-detail-title">{panel.mode === 'add' ? 'Add thought' : panel.mode === 'edit' ? 'Edit thought' : kindLabel(items.find(item => item.id === panel.id)?.kind ?? 'concept')}</h2>
+              <button type="button" className="investigate-further" onClick={closePanel} disabled={busy}>Close</button>
+            </div>
+            {panel.mode === 'view' ? <ItemView item={items.find(entry => entry.id === panel.id) ?? null} items={items} explorationId={experiment.explorationId} experimentId={experiment.id} thumbVersion={panel.id ? (thumbVersions[panel.id] ?? 0) : 0} busy={busy} message={message} saveState={saveState} onEdit={item => setPanel({ mode: 'edit', id: item.id, draft: { kind: item.kind, body: item.body, relatedItemId: item.relatedItemId } })} onDelete={item => void removeItem(item)} onThumbnail={setThumbnail} /> : null}
+            {draft ? (
+              <ThoughtEditor
+                draft={draft}
+                items={items}
+                selfId={panel.mode === 'edit' ? panel.id : null}
+                busy={busy}
+                message={message}
+                saveState={saveState}
+                onChange={updateDraft}
+                onSave={() => {
+                  if (panel.mode === 'add') void commitDraft(panel.itemId, draft, true)
+                  if (panel.mode === 'edit') void commitDraft(panel.id, draft, false)
+                }}
+                onCancel={closePanel}
+                explorationId={experiment.explorationId}
+                experimentId={experiment.id}
+                itemId={panel.mode === 'add' ? panel.itemId : panel.id}
+                imagePath={panel.mode === 'edit' ? (items.find(entry => entry.id === panel.id)?.imagePath ?? null) : null}
+                thumbVersion={panel.mode === 'edit' ? (thumbVersions[panel.id] ?? 0) : 0}
+                onThumbnail={setThumbnail}
+                onPrepared={setPendingThumbnail}
+              />
+            ) : null}
+          </section>
+        ) : null}
+      </aside>
+      <section className="experiment-workspace">
+      {showFocusImage ? <img className="focus-image" alt="" src={`/api/explorations/${experiment.explorationId}/focus-image?v=${focusVersion}`} onError={() => setFocusBroken(true)} /> : null}
+      {showFocusImage ? <div className={`focus-image-veil${focusDimmed ? ' dimmed' : ''}`} /> : null}
       <div className="experiment-question-bar">
         <h1 id="experiment-question">{experiment.questionText}</h1>
         <p className="experiment-note">Explore the ideas behind your question. Develop concepts, test assumptions and record discoveries in any order.</p>
@@ -223,7 +264,7 @@ export default function ExperimentScreen({ experiment }: { experiment: LoadedExp
           <p>If a test would change a live system, follow the approval, safety, and access rules that apply where you work.</p>
         </details>
       </div>
-      <div className={`constellation-canvas${view === 'list' ? ' is-list' : ''}${panel ? ' has-detail' : ''}`}>
+      <div className={`constellation-canvas${view === 'list' ? ' is-list' : ''}`}>
         {view === 'map' ? (
           <div className="constellation-stage">
             <div className="constellation-fit">
@@ -277,39 +318,8 @@ export default function ExperimentScreen({ experiment }: { experiment: LoadedExp
             })}
           </ul>
         )}
-        {panel ? (
-          <aside ref={panelRef} className="experiment-detail" role="dialog" aria-modal="true" aria-labelledby="experiment-detail-title">
-            <div className="experiment-detail-heading">
-              <h2 id="experiment-detail-title">{panel.mode === 'add' ? 'Add thought' : panel.mode === 'edit' ? 'Edit thought' : kindLabel(items.find(item => item.id === panel.id)?.kind ?? 'concept')}</h2>
-              <button type="button" className="investigate-further" onClick={closePanel} disabled={busy}>Close</button>
-            </div>
-            {panel.mode === 'view' ? <ItemView item={items.find(entry => entry.id === panel.id) ?? null} items={items} explorationId={experiment.explorationId} experimentId={experiment.id} thumbVersion={panel.id ? (thumbVersions[panel.id] ?? 0) : 0} busy={busy} message={message} saveState={saveState} onEdit={item => setPanel({ mode: 'edit', id: item.id, draft: { kind: item.kind, body: item.body, relatedItemId: item.relatedItemId } })} onDelete={item => void removeItem(item)} onThumbnail={setThumbnail} /> : null}
-            {draft ? (
-              <ThoughtEditor
-                draft={draft}
-                items={items}
-                selfId={panel.mode === 'edit' ? panel.id : null}
-                busy={busy}
-                message={message}
-                saveState={saveState}
-                onChange={updateDraft}
-                onSave={() => {
-                  if (panel.mode === 'add') void commitDraft(panel.itemId, draft, true)
-                  if (panel.mode === 'edit') void commitDraft(panel.id, draft, false)
-                }}
-                onCancel={closePanel}
-                explorationId={experiment.explorationId}
-                experimentId={experiment.id}
-                itemId={panel.mode === 'add' ? panel.itemId : panel.id}
-                imagePath={panel.mode === 'edit' ? (items.find(entry => entry.id === panel.id)?.imagePath ?? null) : null}
-                thumbVersion={panel.mode === 'edit' ? (thumbVersions[panel.id] ?? 0) : 0}
-                onThumbnail={setThumbnail}
-                onPrepared={setPendingThumbnail}
-              />
-            ) : null}
-          </aside>
-        ) : null}
       </div>
+      </section>
     </main>
   )
 }

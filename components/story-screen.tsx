@@ -127,7 +127,8 @@ export default function StoryScreen({ source }: { source: StorySource }) {
   }
 
   return (
-    <main className="story-shell">
+    <main className={step === 'review' ? 'story-review-shell' : 'story-shell'}>
+      {step === 'review' ? null : <>
       <header className="story-bar">
         <a className="library-link" href={`/explorations/${source.explorationId}`}>Back to exploration</a>
         <p className="story-kicker">{source.title}</p>
@@ -137,9 +138,10 @@ export default function StoryScreen({ source }: { source: StorySource }) {
       <nav className="story-steps" aria-label="Story steps">
         <button type="button" aria-current={step === 'select' ? 'step' : undefined} onClick={() => setStep('select')}>Select</button>
         <button type="button" aria-current={step === 'arrange' ? 'step' : undefined} disabled={!draft} onClick={() => draft && setStep('arrange')}>Arrange</button>
-        <button type="button" aria-current={step === 'review' ? 'step' : undefined} disabled={!draft} onClick={() => draft && setStep('review')}>Review</button>
+        <button type="button" disabled={!draft} onClick={() => draft && setStep('review')}>Review</button>
       </nav>
       {notice ? <p className="composer-error" role="alert">{notice}</p> : null}
+      </>}
 
       {step === 'select' ? (
         <section className="story-panel" aria-labelledby="story-select-heading">
@@ -196,6 +198,7 @@ export default function StoryScreen({ source }: { source: StorySource }) {
           questionsById={questionsById}
           itemsById={itemsById}
           onEdit={() => setStep('arrange')}
+          onDiscard={discard}
           onShowMark={setShowMark}
           onArt={(slideId, next) => setArt(current => ({ ...current, [slideId]: next }))}
           onGenerate={generateArtwork}
@@ -270,6 +273,7 @@ function ReviewStep({
   questionsById,
   itemsById,
   onEdit,
+  onDiscard,
   onShowMark,
   onArt,
   onGenerate,
@@ -281,6 +285,7 @@ function ReviewStep({
   questionsById: Map<string, StorySource['questions'][number]>
   itemsById: Map<string, StoryItem>
   onEdit: () => void
+  onDiscard: () => void
   onShowMark: (value: boolean) => void
   onArt: (slideId: string, next: SlideArt) => void
   onGenerate: (slideId: string, request: StoryImageRequest) => void
@@ -384,27 +389,31 @@ function ReviewStep({
     void downloadVideo()
   }
   return (
-    <section className="story-panel story-review-layout" aria-labelledby="story-review-heading">
+    <>
+    <aside className="sidebar story-sidebar" aria-labelledby="story-review-heading">
+      <header className="brand"><div className="brand-mark" aria-hidden="true"><img src="/logo-removebg-preview.png" alt="" /></div><div><div className="brand-name">curitopia</div><div className="tagline">Ask. Experiment. Create.</div></div></header>
       <h1 id="story-review-heading">Review</h1>
-      <p className="story-lead">The portrait frame is the slide. Artwork is created one slide at a time, only after you confirm. Nothing is published, and the image stays in this tab.</p>
+      <p className="story-temporary" role="note">This story stays in this tab. Refreshing or closing the tab discards the draft. Nothing is saved, and the exploration is not changed.</p>
+      <a className="library-link story-back" href={`/explorations/${source.explorationId}`}>Back to exploration</a>
+      <button type="button" className="library-link story-back" onClick={onEdit}>Back to arrange</button>
+      <button type="button" className="investigate-further" onClick={onDiscard}>Discard story</button>
       <div className="story-review-nav">
         <button type="button" onClick={() => setIndex(slideIndex - 1)} disabled={slideIndex === 0}>Previous slide</button>
         <span>Slide {slideIndex + 1} of {draft.slides.length}</span>
         <button type="button" onClick={() => setIndex(slideIndex + 1)} disabled={slideIndex === draft.slides.length - 1}>Next slide</button>
       </div>
-      <article className={`story-slide${shown?.fit === 'contain' ? ' is-contain' : ''}`} aria-label={`Slide ${slideIndex + 1}: ${label}`}>
-        {shown ? <img className="story-artwork" src={shown.url} alt="" /> : null}
-        {showMark ? <img className="story-mark" src="/logo-removebg-preview.png" alt="" /> : null}
-        {face.hook || face.body ? <div className="story-slide-copy">{face.hook ? <p className="story-slide-hook">{face.hook}</p> : null}{face.body ? <p className="story-slide-body">{face.body}</p> : null}</div> : null}
-      </article>
-      {item ? <p className="story-kind-note">{itemHonesty(item.kind)}</p> : null}
-      <div className="story-filmstrip" aria-label="Story slides">
+      <ol className="story-slide-list" aria-label="Story slides">
         {draft.slides.map((entry, entryIndex) => (
-          <button type="button" key={entry.id} aria-current={entryIndex === slideIndex ? 'true' : undefined} onClick={() => setIndex(entryIndex)}>
-            {entryIndex + 1}. {slideLabel(entry, questionsById, itemsById)}
-          </button>
+          <li key={entry.id}>
+            <button type="button" aria-current={entryIndex === slideIndex ? 'true' : undefined} onClick={() => setIndex(entryIndex)}>
+              <span>{entryIndex + 1}</span>
+              <span>{slideLabel(entry, questionsById, itemsById)}</span>
+            </button>
+          </li>
         ))}
-      </div>
+      </ol>
+      {item ? <p className="story-kind-note">{itemHonesty(item.kind)}</p> : null}
+      <p className="story-lead">The portrait frame is the slide. Artwork is created one slide at a time, only after you confirm. Nothing is published, and the image stays in this tab.</p>
       <div className="story-art-controls">
         {current.phase === 'confirm' && request ? (
           <div className="story-confirm" role="group" aria-label="Confirm artwork">
@@ -448,8 +457,15 @@ function ReviewStep({
       </div>
       {exportMessage ? <p className="story-export-status" role="status">{exportMessage}</p> : null}
       {blockers.length > 0 ? <p className="composer-error">Accept or reject the artwork on {blockers.map(item => `slide ${item.index + 1}`).join(', ')} before downloading.</p> : null}
-      <button type="button" className="add-button story-continue" onClick={onEdit}>Back to arrange</button>
+    </aside>
+    <section className="story-preview-workspace" aria-label="Slide preview">
+      <article className={`story-slide${shown?.fit === 'contain' ? ' is-contain' : ''}`} aria-label={`Slide ${slideIndex + 1}: ${label}`}>
+        {shown ? <img className="story-artwork" src={shown.url} alt="" /> : null}
+        {showMark ? <img className="story-mark" src="/logo-removebg-preview.png" alt="" /> : null}
+        {face.hook || face.body ? <div className="story-slide-copy">{face.hook ? <p className="story-slide-hook">{face.hook}</p> : null}{face.body ? <p className="story-slide-body">{face.body}</p> : null}</div> : null}
+      </article>
     </section>
+    </>
   )
 }
 

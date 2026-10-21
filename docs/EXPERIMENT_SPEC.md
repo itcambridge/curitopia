@@ -9,7 +9,7 @@ Phase 3 adds one optional thumbnail on any experiment item. The first thumbnail 
 
 D-017, D-019, and D-020 still forbid an AI experiment planner inside reflection. This workspace is written by the user.
 
-Quickfire, Focus, editable explorations, reflection, and the Focus Image stay as they are. Starting an experiment does not move, delete, complete, or lock the exploration it came from. The experiment page may show that exploration's Focus Image behind the constellation. Hiding or dimming it there is local to the experiment view and does not write the exploration.
+Quickfire, Focus, editable explorations, reflection, and the Focus Image stay as they are. Starting an experiment does not move, delete, complete, or lock the exploration it came from. The experiment page may show that exploration's Focus Image behind the constellation. Hiding or dimming it there is local to the experiment view and does not write the exploration. The experiment controls and the thought editor sit in a left sidebar. The constellation uses the remaining width and is sized to that workspace.
 
 ## Agreed product direction
 

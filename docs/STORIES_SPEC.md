@@ -108,7 +108,7 @@ The current product is usable at desktop and mobile widths. `docs/UX_SPEC.md` de
 
 Images are composed for that 9:16 canvas. Enlarging a concept thumbnail, a Focus Image, or a screen capture is not the design.
 
-The approved output is one silent MP4 after the person has reviewed the sequence. Each frame is the same 1080 by 1920 slide used for the portrait preview: accepted artwork when there is some, the question or item text for that slide, its subtitle, the gradient, and the Curitopia mark only when it is turned on. A slide with no artwork uses the dark text frame. Artwork that is still waiting for a decision blocks the download. PDF is excluded. The review screen shows the slides, including order, words, and images, before any file is made. A small Curitopia mark is optional.
+The approved output is one silent MP4 after the person has reviewed the sequence. Each frame is the same 1080 by 1920 slide used for the portrait preview: accepted artwork when there is some, the question or item text for that slide, its subtitle, the gradient, and the Curitopia mark only when it is turned on. A slide with no artwork uses the dark text frame. Artwork that is still waiting for a decision blocks the download. PDF is excluded. The review screen shows the slides, including order, words, and images, before any file is made. Those controls sit in a left sidebar, and the selected slide is a 9:16 preview in the remaining space. A small Curitopia mark is optional.
 
 Three things stay separate:
 
