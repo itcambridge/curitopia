@@ -1,5 +1,6 @@
 'use client'
 
+import { ArrowLeft, ChevronLeft, ChevronRight, House, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createStory, moveSlide, removeSlide, setClosingQuestion, setOpening, setSlideSubtitle, storyKindLabel, syncStory, type StoryDraft, type StoryItem, type StorySlide, type StorySource } from '@/lib/stories/draft'
@@ -393,14 +394,15 @@ function ReviewStep({
     <aside className="sidebar story-sidebar" aria-labelledby="story-review-heading">
       <header className="brand"><div className="brand-mark" aria-hidden="true"><img src="/logo-removebg-preview.png" alt="" /></div><div><div className="brand-name">curitopia</div><div className="tagline">Ask. Experiment. Create.</div></div></header>
       <h1 id="story-review-heading">Review</h1>
-      <p className="story-temporary" role="note">This story stays in this tab. Refreshing or closing the tab discards the draft. Nothing is saved, and the exploration is not changed.</p>
-      <a className="library-link story-back" href={`/explorations/${source.explorationId}`}>Back to exploration</a>
-      <button type="button" className="library-link story-back" onClick={onEdit}>Back to arrange</button>
-      <button type="button" className="investigate-further" onClick={onDiscard}>Discard story</button>
+      <div className="story-icon-row">
+        <a href={`/explorations/${source.explorationId}`} aria-label="Back to exploration" title="Back to exploration"><House size={18} aria-hidden="true" /></a>
+        <button type="button" aria-label="Back to arrange" title="Back to arrange" onClick={onEdit}><ArrowLeft size={18} aria-hidden="true" /></button>
+        <button type="button" aria-label="Discard story" title="Discard story" onClick={onDiscard}><Trash2 size={18} aria-hidden="true" /></button>
+      </div>
       <div className="story-review-nav">
-        <button type="button" onClick={() => setIndex(slideIndex - 1)} disabled={slideIndex === 0}>Previous slide</button>
+        <button type="button" aria-label="Previous slide" title="Previous slide" onClick={() => setIndex(slideIndex - 1)} disabled={slideIndex === 0}><ChevronLeft size={18} aria-hidden="true" /></button>
         <span>Slide {slideIndex + 1} of {draft.slides.length}</span>
-        <button type="button" onClick={() => setIndex(slideIndex + 1)} disabled={slideIndex === draft.slides.length - 1}>Next slide</button>
+        <button type="button" aria-label="Next slide" title="Next slide" onClick={() => setIndex(slideIndex + 1)} disabled={slideIndex === draft.slides.length - 1}><ChevronRight size={18} aria-hidden="true" /></button>
       </div>
       <ol className="story-slide-list" aria-label="Story slides">
         {draft.slides.map((entry, entryIndex) => (
@@ -413,7 +415,6 @@ function ReviewStep({
         ))}
       </ol>
       {item ? <p className="story-kind-note">{itemHonesty(item.kind)}</p> : null}
-      <p className="story-lead">The portrait frame is the slide. Artwork is created one slide at a time, only after you confirm. Nothing is published, and the image stays in this tab.</p>
       <div className="story-art-controls">
         {current.phase === 'confirm' && request ? (
           <div className="story-confirm" role="group" aria-label="Confirm artwork">

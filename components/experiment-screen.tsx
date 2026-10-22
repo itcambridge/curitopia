@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, EyeOff, FlaskConical, Gem, Lightbulb, List, Map, Sparkles, StickyNote, Sun, SunDim, type LucideIcon } from 'lucide-react'
+import { BookOpen, Eye, EyeOff, FlaskConical, Gem, Lightbulb, List, Map, MessageCircleQuestionMark, Sparkles, StickyNote, Sun, SunDim, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import ConceptThumbnail, { storeConceptThumbnail } from '@/components/concept-thumbnail'
 import { deleteExperimentItem, saveExperimentItem } from '@/lib/experiments/actions'
@@ -201,29 +201,23 @@ export default function ExperimentScreen({ experiment }: { experiment: LoadedExp
     <main className="experiment-shell">
       <aside className="sidebar experiment-sidebar">
         <header className="brand"><div className="brand-mark" aria-hidden="true"><img src="/logo-removebg-preview.png" alt="" /></div><div><div className="brand-name">curitopia</div><div className="tagline">Ask. Experiment. Create.</div></div></header>
-        <a className="library-link experiment-back" href={`/explorations/${experiment.explorationId}`}>Back to exploration</a>
-        <div className="sidebar-nav">
-          <div className="map-tabs" role="tablist" aria-label="Experiment views">
-            <button type="button" role="tab" aria-selected={view === 'map'} className={view === 'map' ? 'selected' : ''} onClick={() => setView('map')}><Map size={17} aria-hidden="true" /> Map</button>
-            <button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'selected' : ''} onClick={() => setView('list')}><List size={17} aria-hidden="true" /> List</button>
+        <div className="experiment-icon-row">
+          <a href={`/explorations/${experiment.explorationId}`} aria-label="Question page" title="Question page"><MessageCircleQuestionMark size={18} aria-hidden="true" /></a>
+          <div className="experiment-view-tabs" role="tablist" aria-label="Experiment views">
+            <button type="button" role="tab" aria-selected={view === 'map'} className={view === 'map' ? 'selected' : ''} aria-label="Map" title="Map" onClick={() => setView('map')}><Map size={18} aria-hidden="true" /></button>
+            <button type="button" role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'selected' : ''} aria-label="List" title="List" onClick={() => setView('list')}><List size={18} aria-hidden="true" /></button>
           </div>
+          <button type="button" aria-pressed={focusHidden} aria-label={experiment.hasFocusImage ? imageLabel : 'Hide image'} title={experiment.hasFocusImage ? imageLabel : 'Hide image'} disabled={!experiment.hasFocusImage} onClick={() => { if (focusBroken) { setFocusBroken(false); setFocusHidden(false); setFocusVersion(version => version + 1); return } setFocusHidden(current => !current) }}>{focusHidden || focusBroken ? <Eye size={18} aria-hidden="true" /> : <EyeOff size={18} aria-hidden="true" />}</button>
+          <button type="button" aria-pressed={focusDimmed} aria-label={experiment.hasFocusImage ? dimLabel : 'Dim image'} title={experiment.hasFocusImage ? dimLabel : 'Dim image'} disabled={!experiment.hasFocusImage} onClick={() => setFocusDimmed(current => !current)}>{focusDimmed ? <Sun size={18} aria-hidden="true" /> : <SunDim size={18} aria-hidden="true" />}</button>
+          <a href={`/explorations/${experiment.explorationId}/story`} aria-label="Create a Story" title="Create a Story"><BookOpen size={18} aria-hidden="true" /></a>
         </div>
-        {experiment.hasFocusImage ? (
-          <div className="sidebar-image-tools">
-            <div className="focus-image-actions" role="group" aria-label="Focus image">
-              <button type="button" className="focus-image-button" aria-pressed={focusHidden} aria-label={imageLabel} title={imageLabel} onClick={() => { if (focusBroken) { setFocusBroken(false); setFocusHidden(false); setFocusVersion(version => version + 1); return } setFocusHidden(current => !current) }}>{focusHidden || focusBroken ? <Eye size={18} aria-hidden="true" /> : <EyeOff size={18} aria-hidden="true" />}</button>
-              {showFocusImage ? <button type="button" className="focus-image-button" aria-pressed={focusDimmed} aria-label={dimLabel} title={dimLabel} onClick={() => setFocusDimmed(current => !current)}>{focusDimmed ? <Sun size={18} aria-hidden="true" /> : <SunDim size={18} aria-hidden="true" />}</button> : null}
-            </div>
-          </div>
-        ) : null}
-        <a className="library-link story-entry" href={`/explorations/${experiment.explorationId}/story`}>Create a Story</a>
-        <button type="button" className="add-button experiment-add" disabled={busy} onClick={openAdd}>+ Add thought</button>
+        <button type="button" className="add-button experiment-add" disabled={busy} onClick={openAdd}>+ Experiment</button>
         {message && panel === null ? <p className={saveState === 'error' ? 'composer-error' : 'experiment-status'} role={saveState === 'error' ? 'alert' : 'status'}>{message}</p> : null}
         {saveState === 'saving' && panel === null ? <p className="experiment-status" role="status">Saving</p> : null}
         {panel ? (
           <section ref={panelRef} className="experiment-detail" aria-labelledby="experiment-detail-title">
             <div className="experiment-detail-heading">
-              <h2 id="experiment-detail-title">{panel.mode === 'add' ? 'Add thought' : panel.mode === 'edit' ? 'Edit thought' : kindLabel(items.find(item => item.id === panel.id)?.kind ?? 'concept')}</h2>
+              <h2 id="experiment-detail-title" className={panel.mode === 'add' ? 'sr-only' : undefined}>{panel.mode === 'add' ? 'Add thought' : panel.mode === 'edit' ? 'Edit thought' : kindLabel(items.find(item => item.id === panel.id)?.kind ?? 'concept')}</h2>
               <button type="button" className="investigate-further" onClick={closePanel} disabled={busy}>Close</button>
             </div>
             {panel.mode === 'view' ? <ItemView item={items.find(entry => entry.id === panel.id) ?? null} items={items} explorationId={experiment.explorationId} experimentId={experiment.id} thumbVersion={panel.id ? (thumbVersions[panel.id] ?? 0) : 0} busy={busy} message={message} saveState={saveState} onEdit={item => setPanel({ mode: 'edit', id: item.id, draft: { kind: item.kind, body: item.body, relatedItemId: item.relatedItemId } })} onDelete={item => void removeItem(item)} onThumbnail={setThumbnail} /> : null}
@@ -256,14 +250,6 @@ export default function ExperimentScreen({ experiment }: { experiment: LoadedExp
       <section className="experiment-workspace">
       {showFocusImage ? <img className="focus-image" alt="" src={`/api/explorations/${experiment.explorationId}/focus-image?v=${focusVersion}`} onError={() => setFocusBroken(true)} /> : null}
       {showFocusImage ? <div className={`focus-image-veil${focusDimmed ? ' dimmed' : ''}`} /> : null}
-      <div className="experiment-question-bar">
-        <h1 id="experiment-question">{experiment.questionText}</h1>
-        <p className="experiment-note">Explore the ideas behind your question. Develop concepts, test assumptions and record discoveries in any order.</p>
-        <details className="experiment-safety">
-          <summary>About tests</summary>
-          <p>If a test would change a live system, follow the approval, safety, and access rules that apply where you work.</p>
-        </details>
-      </div>
       <div className={`constellation-canvas${view === 'list' ? ' is-list' : ''}`}>
         {view === 'map' ? (
           <div className="constellation-stage">
@@ -410,16 +396,15 @@ function ThoughtEditor({ draft, items, selfId, busy, message, saveState, onChang
   const choices = items.filter(item => item.id !== selfId)
   return (
     <div className="experiment-editor">
-      <label className="experiment-field">
-        <span>Type</span>
-        <select className="experiment-kind" value={draft.kind} disabled={busy} onChange={event => { const next = experimentItemKind(event.target.value); if (next) onChange({ ...draft, kind: next }) }}>
+      <div className="experiment-field">
+        <select className="experiment-kind" aria-label="Type" value={draft.kind} disabled={busy} onChange={event => { const next = experimentItemKind(event.target.value); if (next) onChange({ ...draft, kind: next }) }}>
           {experimentItemKinds.map(option => <option key={option.kind} value={option.kind}>{option.label}</option>)}
         </select>
-      </label>
-      <label className="experiment-field">
-        <span>Text</span>
+      </div>
+      {draft.kind === 'test' ? <p className="experiment-note">If a test would change a live system, follow the approval, safety, and access rules that apply where you work.</p> : null}
+      <div className="experiment-field">
         <textarea value={draft.body} disabled={busy} aria-label="Item text" aria-invalid={message === 'Write something first.' || message === 'An item can be at most 2,000 characters.' ? true : undefined} placeholder="Write a concept, note, hypothesis, test, observation, or discovery" onChange={event => onChange({ ...draft, body: event.target.value })} />
-      </label>
+      </div>
       <label className="experiment-field">
         <span>Related to</span>
         <select className="experiment-kind" aria-label="Related to" value={draft.relatedItemId ?? ''} disabled={busy} onChange={event => onChange({ ...draft, relatedItemId: event.target.value || null })}>

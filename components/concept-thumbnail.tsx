@@ -1,6 +1,9 @@
 'use client'
 
+import { Info } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+
+const imageDisclosure = 'The prompt below is sent to OpenAI. Generating an image can use API credit. An upload is not sent.'
 import { editThumbnailPrompt, maySubmitConceptPrompt, nextThumbnailPrompt, suggestedConceptPrompt, type ThumbnailPromptState } from '@/lib/experiments/thumbnail-prompt'
 import { THUMBNAIL_MAX_BYTES, THUMBNAIL_SOURCE_MAX_BYTES, THUMBNAIL_TARGET_BYTES, isThumbnailSource } from '@/lib/experiments/thumbnail'
 
@@ -262,15 +265,12 @@ export default function ConceptThumbnail({
           {previewUrl ? <img className="concept-thumbnail-saved" alt="Thumbnail preview" width={96} height={96} src={previewUrl} /> : null}
           {phase !== 'preview' ? (
             <>
-              <label className="experiment-field">
-                <span>Upload</span>
-                <input className="experiment-kind" type="file" accept="image/jpeg,image/png,image/webp" disabled={phase === 'working'} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; void chooseFile(file) }} />
-              </label>
-              <p className="experiment-note">The prompt below is sent to OpenAI. Generating an image can use API credit. An upload is not sent.</p>
-              <label className="experiment-field">
+              <input className="experiment-kind" type="file" aria-label="Upload image" accept="image/jpeg,image/png,image/webp" disabled={phase === 'working'} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; void chooseFile(file) }} />
+              <div className="experiment-prompt-row">
                 <span>Prompt</span>
-                <textarea aria-label="Thumbnail prompt" value={prompt} disabled={phase === 'working'} onChange={event => setPromptState(current => editThumbnailPrompt(current, event.target.value))} />
-              </label>
+                <button type="button" className="experiment-info" aria-label={imageDisclosure} data-tip={imageDisclosure}><Info size={15} aria-hidden="true" /></button>
+              </div>
+              <textarea aria-label="Thumbnail prompt" value={prompt} disabled={phase === 'working'} onChange={event => setPromptState(current => editThumbnailPrompt(current, event.target.value))} />
               <div className="experiment-item-actions">
                 <button type="button" className="investigate-further" disabled={phase === 'working' || !maySubmitConceptPrompt({ confirmed: true, inFlight: false, prompt, kind })} onClick={() => void generate()}>Generate</button>
                 <button type="button" className="investigate-further" disabled={phase === 'working'} onClick={closeEditor}>Cancel</button>
